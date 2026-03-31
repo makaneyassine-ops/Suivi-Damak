@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DAMAK — Pilotage P&L</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+#toast{display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:10px 22px;border-radius:8px;z-index:9999;pointer-events:none;letter-spacing:.05em;transition:opacity .3s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.18)}
+</style>
+<style>
+:root {
+  --bg:#f4f2ee;--surface:#fff;--surface2:#f0ede8;
+  --border:rgba(0,0,0,.09);--border-strong:rgba(0,0,0,.18);
+  --text:#1a1a18;--text-muted:#72706a;--text-faint:#a8a59f;
+  --blue:#1d5fc4;--blue-bg:#eef3fd;--blue-border:#b8ccf5;
+  --green:#16803c;--green-bg:#edfaf3;--green-border:#86efac;
+  --red:#c0251e;--red-bg:#fef2f2;--red-border:#fca5a5;
+  --amber:#92580a;--amber-bg:#fffbeb;--amber-border:#fcd34d;
+  --mono:'IBM Plex Mono',monospace;--sans:'Plus Jakarta Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+
+/* TABS */
+.tabs-bar{background:var(--surface);border-bottom:1px solid var(--border-strong);display:flex;align-items:center;padding:0 1.5rem;position:sticky;top:0;z-index:100}
+.tab-logo{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.14em;color:var(--blue);text-transform:uppercase;padding-right:1.5rem;border-right:1px solid var(--border-strong);margin-right:1rem;line-height:48px;white-space:nowrap}
+.tab{font-size:13px;font-weight:500;color:var(--text-muted);padding:0 1rem;line-height:48px;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;user-select:none;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+
+/* PAGES */
+.page{display:none;max-width:900px;margin:0 auto;padding:2rem 1.5rem 4rem}
+.page.active{display:block}
+.page-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:1.75rem;gap:1rem;flex-wrap:wrap}
+.page-title{font-size:20px;font-weight:600;letter-spacing:-.025em}
+
+/* PANELS */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.panel-title{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.13em;color:var(--blue);font-weight:500;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem}
+.kpi{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--blue-border);border-radius:10px;padding:.875rem 1rem}
+.kpi-label{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);margin-bottom:6px}
+.kpi-value{font-family:var(--mono);font-size:17px;font-weight:500;color:var(--text)}
+.kpi-sub{font-size:10px;color:var(--text-faint);margin-top:3px}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+
+/* FIELDS */
+.field{margin-bottom:.75rem}
+.field:last-child{margin-bottom:0}
+.field-row{display:flex;align-items:center;gap:8px}
+.field-label{font-size:12px;color:var(--text-muted);flex:1;display:flex;align-items:center;gap:4px}
+.field-input-wrap{display:flex;align-items:center;gap:6px}
+input[type="number"]{width:100px;background:var(--surface2);border:1px solid var(--border-strong);border-radius:6px;padding:5px 8px;font-family:var(--mono);font-size:13px;color:var(--text);text-align:right;outline:none;transition:border-color .15s;-moz-appearance:textfield}
+input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type="number"]:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,95,196,.1)}
+.field-unit{font-family:var(--mono);font-size:10px;color:var(--text-faint);width:36px}
+select{background:var(--surface2);border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;cursor:pointer;transition:border-color .15s}
+select:focus{border-color:var(--blue)}
+
+/* TOOLTIP */
+.tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--surface2);border:1px solid var(--border-strong);font-size:10px;font-weight:600;color:var(--text-muted);cursor:help;flex-shrink:0;font-family:var(--mono);transition:background .15s,border-color .15s}
+.tip:hover{background:var(--blue-bg);border-color:var(--blue);color:var(--blue)}
+.tip .tip-box{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#1a1a18;color:#f4f2ee;font-family:var(--sans);font-size:12px;font-weight:400;line-height:1.5;padding:8px 12px;border-radius:8px;width:230px;white-space:normal;z-index:200;pointer-events:none}
+.tip .tip-box::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1a1a18}
+.tip:hover .tip-box{display:block}
+
+/* VERDICT */
+.verdict{border-radius:14px;padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1.25rem;margin-bottom:1.5rem;border:1.5px solid var(--border);transition:all .35s ease}
+.verdict.win{background:var(--green-bg);border-color:var(--green-border)}
+.verdict.lose{background:var(--red-bg);border-color:var(--red-border)}
+.verdict.flat{background:var(--amber-bg);border-color:var(--amber-border)}
+.v-dot{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.win .v-dot{background:var(--green)}.lose .v-dot{background:var(--red)}.flat .v-dot{background:var(--amber)}
+.v-dot svg{width:20px;height:20px}
+.v-label{font-size:10px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;font-weight:500;margin-bottom:3px}
+.win .v-label{color:var(--green)}.lose .v-label{color:var(--red)}.flat .v-label{color:var(--amber)}
+.v-amount{font-size:27px;font-weight:600;letter-spacing:-.02em}
+.win .v-amount{color:var(--green)}.lose .v-amount{color:var(--red)}.flat .v-amount{color:var(--amber)}
+.v-meta{margin-left:auto;text-align:right}
+.v-meta-line{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:3px}
+
+/* BREAKDOWN */
+.brow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
+.brow:last-child{border-bottom:none}
+.brow.indent{padding-left:12px}
+.brow-key{font-size:12px;color:var(--text-muted)}
+.brow-val{font-family:var(--mono);font-size:12px;color:var(--text)}
+.brow-val.neg{color:var(--red)}
+.brow-sep{height:1px;background:var(--border-strong);margin:8px 0}
+.brow-total{display:flex;justify-content:space-between;align-items:center;padding:6px 0 0}
+.brow-total-key{font-size:13px;font-weight:600;color:var(--text)}
+.brow-total-val{font-family:var(--mono);font-size:15px;font-weight:500}
+
+/* SEUIL */
+.seuil-wrap{margin-top:.875rem;padding-top:.875rem;border-top:1px solid var(--border)}
+.seuil-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);font-family:var(--mono);margin-bottom:6px}
+.seuil-track{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;border:1px solid var(--border)}
+.seuil-fill{height:100%;border-radius:3px;transition:width .4s ease,background .3s}
+
+/* DASHBOARD STAT CARDS */
+.stat-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem}
+.stat-card-label{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);margin-bottom:8px}
+.stat-card-value{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--text);margin-bottom:3px}
+.stat-card-sub{font-size:11px;color:var(--text-muted)}
+
+/* WIN/LOSE RATIO */
+.ratio-bar-wrap{margin-top:8px}
+.ratio-bar{height:8px;border-radius:4px;background:var(--surface2);overflow:hidden;display:flex;border:1px solid var(--border)}
+.ratio-win{background:var(--green);transition:width .4s}
+.ratio-lose{background:var(--red);transition:width .4s}
+
+/* DAY LIST */
+.day-list{max-height:320px;overflow-y:auto}
+.day-row{display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid var(--border);border-radius:4px}
+.day-row:last-child{border-bottom:none}
+.day-row:hover{background:var(--surface2)}
+.day-date{font-family:var(--mono);font-size:11px;color:var(--text-muted);width:80px;flex-shrink:0}
+.day-bar-wrap{flex:1;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;border:1px solid var(--border)}
+.day-bar{height:100%;border-radius:3px}
+.day-val{font-family:var(--mono);font-size:11px;width:110px;text-align:right;flex-shrink:0}
+.day-badge{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px;letter-spacing:.06em;flex-shrink:0;width:56px;text-align:center}
+.badge-win{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.badge-lose{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.badge-flat{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+.day-actions{display:flex;gap:4px;flex-shrink:0}
+.day-btn{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text-faint);transition:all .15s}
+.day-btn:hover.edit{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+.day-btn:hover.del{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+
+/* CHART */
+.chart-wrap{position:relative;height:200px;margin-top:.5rem}
+
+/* PARAMS */
+.params-intro{background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:13px;color:#1a3870;line-height:1.6}
+.params-intro strong{font-weight:600}
+.month-selector{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.875rem 1.25rem}
+.month-selector label{font-size:12px;color:var(--text-muted);font-family:var(--mono)}
+.params-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem}
+.param-group{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.param-group-title{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.13em;color:var(--blue);font-weight:500;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+.param-row{display:flex;align-items:center;gap:8px;margin-bottom:.75rem}
+.param-row:last-child{margin-bottom:0}
+.param-label{font-size:12px;color:var(--text-muted);flex:1;display:flex;align-items:center;gap:4px}
+.params-total{background:var(--surface);border:1.5px solid var(--border-strong);border-radius:12px;padding:1.25rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.params-total-label{font-size:13px;color:var(--text-muted);margin-bottom:3px}
+.params-total-val{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--text)}
+.params-total-sub{font-size:11px;color:var(--text-faint);font-family:var(--mono);margin-top:2px}
+
+/* BUTTONS */
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--blue);border:none;border-radius:8px;padding:10px 20px;font-family:var(--mono);font-size:12px;font-weight:500;color:#fff;cursor:pointer;transition:all .15s;letter-spacing:.06em}
+.btn-primary:hover{background:#1749a8}
+.btn-primary:active{transform:scale(.98)}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;padding:9px 18px;font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text-muted);cursor:pointer;transition:all .15s;letter-spacing:.06em}
+.btn-secondary:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+.btn-row{display:flex;gap:10px;margin-top:1rem;flex-wrap:wrap}
+.footer-note{margin-top:2rem;font-size:11px;font-family:var(--mono);color:var(--text-faint);text-align:center;letter-spacing:.06em}
+
+.empty-state{text-align:center;padding:2.5rem 1rem;color:var(--text-faint);font-size:13px}
+.empty-state-icon{font-size:28px;margin-bottom:.75rem;opacity:.4}
+
+@media(max-width:620px){
+  .grid2,.params-grid{grid-template-columns:1fr}
+  .kpi-row,.stat-cards{grid-template-columns:repeat(2,1fr)}
+  .v-meta{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="tabs-bar">
+  <div class="tab-logo">DAMAK</div>
+  <div class="tab active" onclick="switchTab(0)">Dashboard</div>
+  <div class="tab" onclick="switchTab(1)">Journée</div>
+  <div class="tab" onclick="switchTab(2)">Paramètres</div>
+</div>
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div class="page active" id="page-0">
+  <div class="page-header">
+    <div class="page-title">Tableau de bord</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <select id="db-month" onchange="renderDashboard()"></select>
+      <select id="db-year" onchange="renderDashboard()"></select>
+      <button class="btn-secondary" onclick="exportData()" title="Télécharger une sauvegarde JSON de toutes les données" style="padding:6px 14px;font-size:11px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+      <button class="btn-secondary" onclick="document.getElementById('import-input').click()" title="Restaurer depuis un fichier de sauvegarde JSON" style="padding:6px 14px;font-size:11px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import
+      </button>
+    </div>
+  </div>
+
+  <div class="stat-cards">
+    <div class="stat-card">
+      <div class="stat-card-label">CA façon</div>
+      <div class="stat-card-value" id="db-ca">—</div>
+      <div class="stat-card-sub">MAD ce mois</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Résultat net</div>
+      <div class="stat-card-value" id="db-net">—</div>
+      <div class="stat-card-sub" id="db-net-sub">MAD ce mois</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Meilleure journée</div>
+      <div class="stat-card-value" id="db-best" style="color:var(--green)">—</div>
+      <div class="stat-card-sub" id="db-best-date">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Pire journée</div>
+      <div class="stat-card-value" id="db-worst" style="color:var(--red)">—</div>
+      <div class="stat-card-sub" id="db-worst-date">—</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:12px">
+    <div class="panel">
+      <div class="panel-title">Jours gagnants / perdants</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+        <span style="font-family:var(--mono);font-size:22px;font-weight:500;color:var(--green)" id="db-wins">—</span>
+        <span style="font-size:12px;color:var(--text-muted)" id="db-ratio-label">— jours enregistrés</span>
+        <span style="font-family:var(--mono);font-size:22px;font-weight:500;color:var(--red)" id="db-losses">—</span>
+      </div>
+      <div class="ratio-bar-wrap">
+        <div class="ratio-bar">
+          <div class="ratio-win" id="db-ratio-win" style="width:50%"></div>
+          <div class="ratio-lose" id="db-ratio-lose" style="width:50%"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--text-faint);margin-top:5px">
+        <span>Gagnants</span><span>Perdants</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Résultat net — courbe du mois</div>
+      <div class="chart-wrap">
+        <canvas id="db-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Détail des journées enregistrées</div>
+    <div class="day-list" id="db-day-list">
+      <div class="empty-state"><div class="empty-state-icon">📋</div>Aucune journée enregistrée pour cette période.</div>
+    </div>
+  </div>
+
+  <div class="footer-note">DAMAK International · Dashboard P&L · v3.0</div>
+</div>
+
+<!-- ═══════════════ JOURNÉE ═══════════════ -->
+<div class="page" id="page-1">
+  <div class="page-header">
+    <div class="page-title">Saisie de la journée</div>
+    <label style="font-family:var(--mono);font-size:12px;color:var(--text-muted);background:var(--surface);border:1px solid var(--border-strong);border-radius:7px;padding:6px 12px;cursor:pointer">
+      <input type="date" id="date-input" style="background:transparent;border:none;outline:none;color:var(--text-muted);font-family:var(--mono);font-size:12px;cursor:pointer">
+    </label>
+  </div>
+
+  <div id="edit-banner" style="display:none;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:8px;padding:8px 14px;font-size:12px;font-family:var(--mono);color:var(--amber);margin-bottom:12px;align-items:center;gap:10px">
+    <span id="edit-banner-text" style="flex:1"></span>
+    <button onclick="cancelEdit()" style="background:none;border:1px solid var(--amber-border);border-radius:6px;padding:3px 10px;font-family:var(--mono);font-size:11px;color:var(--amber);cursor:pointer">✕ Annuler</button>
+  </div>
+
+  <div class="verdict flat" id="verdict">
+    <div class="v-dot">
+      <svg id="v-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/>
+      </svg>
+    </div>
+    <div>
+      <div class="v-label" id="v-label">En attente</div>
+      <div class="v-amount" id="v-amount">0 MAD</div>
+    </div>
+    <div class="v-meta">
+      <div class="v-meta-line" id="v-d1">—</div>
+      <div class="v-meta-line" id="v-d2">—</div>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">CA façon</div><div class="kpi-value" id="k-ca">0</div><div class="kpi-sub">MAD</div></div>
+    <div class="kpi"><div class="kpi-label">Charges totales</div><div class="kpi-value" id="k-charges">0</div><div class="kpi-sub">MAD</div></div>
+    <div class="kpi"><div class="kpi-label">Marge après MO</div><div class="kpi-value" id="k-mmv">0%</div><div class="kpi-sub">avant charges fixes</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-title">Saisie du jour</div>
+
+      <div class="field"><div class="field-row">
+        <span class="field-label">Pièces produites
+          <span class="tip">?<span class="tip-box">Nombre de pièces sorties de production aujourd'hui, toutes commandes confondues. La facturation et la livraison sont gérées séparément.</span></span>
+        </span>
+        <div class="field-input-wrap"><input type="number" id="facturees" value="280" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
+      </div></div>
+
+      <div class="field"><div class="field-row">
+        <span class="field-label">Prix de façon / pièce
+          <span class="tip">?<span class="tip-box">Tarif façon moyen facturé au client. Le tissu et les fournitures sont fournis par le client — ils ne rentrent pas dans ce calcul.</span></span>
+        </span>
+        <div class="field-input-wrap"><input type="number" id="prix_facon" value="65" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+      </div></div>
+
+      <div class="field"><div class="field-row">
+        <span class="field-label">Salaires du jour
+          <span class="tip">?<span class="tip-box">Montant total des salaires bruts journaliers (calculé depuis la fiche de paie). Les charges patronales (CNSS, AMO…) sont à configurer mensuellement dans les Paramètres.</span></span>
+        </span>
+        <div class="field-input-wrap"><input type="number" id="salaires_jour" value="0" min="0" step="100" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+      </div></div>
+
+      <div class="field"><div class="field-row">
+        <span class="field-label">Dépenses imprévues
+          <span class="tip">?<span class="tip-box">Dépense exceptionnelle non planifiée : réparation urgente, sous-traitance ponctuelle. Laisser à 0 si rien.</span></span>
+        </span>
+        <div class="field-input-wrap"><input type="number" id="var_imprevues" value="0" min="0" step="50" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+      </div></div>
+
+      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+        <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);margin-bottom:.5rem">
+          Charges fixes du jour <em style="text-transform:none;letter-spacing:0;font-style:italic">(depuis paramètres)</em>
+        </div>
+        <div style="font-family:var(--mono);font-size:15px;font-weight:500;color:var(--text)" id="fixes-display">— MAD</div>
+        <div style="font-size:11px;color:var(--text-faint);margin-top:3px" id="fixes-detail">Configurer dans l'onglet Paramètres</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Décomposition P&L</div>
+      <div class="brow"><span class="brow-key">CA façon (pièces × prix)</span><span class="brow-val" id="b-ca">—</span></div>
+      <div class="brow indent"><span class="brow-key">— Salaires du jour</span><span class="brow-val neg" id="b-mo">—</span></div>
+      <div class="brow indent"><span class="brow-key">— Dépenses imprévues</span><span class="brow-val neg" id="b-var">—</span></div>
+      <div class="brow-sep"></div>
+      <div class="brow"><span class="brow-key">Marge sur coûts variables</span><span class="brow-val" id="b-mcv">—</span></div>
+      <div class="brow indent"><span class="brow-key">— Charges fixes / jour</span><span class="brow-val neg" id="b-fix">—</span></div>
+      <div class="brow-sep"></div>
+      <div class="brow-total">
+        <span class="brow-total-key">Résultat net</span>
+        <span class="brow-total-val" id="b-net">—</span>
+      </div>
+      <div class="seuil-wrap">
+        <div class="seuil-labels"><span>Couverture charges fixes</span><span id="seuil-pct">—</span></div>
+        <div class="seuil-track"><div class="seuil-fill" id="seuil-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-primary" onclick="saveDay(this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Enregistrer et voir dans le dashboard
+    </button>
+    <button class="btn-secondary" onclick="goToParamsForCurrentDate()">Paramètres →</button>
+  </div>
+  <div class="footer-note">DAMAK International · Journée · v3.0</div>
+</div>
+
+<!-- ═══════════════ PARAMÈTRES ═══════════════ -->
+<div class="page" id="page-2">
+  <div class="page-header">
+    <div class="page-title">Paramètres charges fixes</div>
+  </div>
+
+  <div class="params-intro">
+    Configurez ici les charges fixes <strong>mois par mois</strong>. Sélectionnez le mois à paramétrer, saisissez les valeurs, puis enregistrez. L'outil utilisera automatiquement le bon jeu de paramètres pour chaque journée enregistrée.
+  </div>
+
+  <div class="month-selector">
+    <label>Mois à configurer :</label>
+    <select id="p-month" onchange="loadParams()"></select>
+    <select id="p-year" onchange="loadParams()"></select>
+  </div>
+
+  <div class="params-grid">
+
+    <!-- MO -->
+    <div class="param-group">
+      <div class="param-group-title">Main d'œuvre</div>
+      <div class="param-row">
+        <span class="param-label">Charges sociales patronales / mois
+          <span class="tip">?<span class="tip-box">Estimation mensuelle des charges patronales : CNSS, AMO employeur, IPE, etc. Ce montant est réparti en quote-part journalière et inclus dans les charges fixes du jour.</span></span>
+        </span>
+        <div class="field-input-wrap"><input type="number" id="p-charges-sociales" value="0" min="0" step="100" oninput="calcParams()"><span class="field-unit">MAD</span></div>
+      </div>
+    </div>
+
+    <!-- Calendrier -->
+    <div class="param-group">
+      <div class="param-group-title">Calendrier</div>
+      <div class="param-row">
+        <span class="param-label">Jours ouvrés ce mois
+          <span class="tip">?<span class="tip-box">Nombre de jours de production effectifs ce mois (hors week-ends et jours fériés). Sert à calculer la quote-part journalière de chaque charge fixe mensuelle.</span></span>
+        </span>
+        <div class="field-input-wrap"><input type="number" id="p-jours" value="26" min="1" max="31" oninput="calcParams()"><span class="field-unit">j</span></div>
+      </div>
+    </div>
+
+    <!-- Locaux & énergie -->
+    <div class="param-group">
+      <div class="param-group-title">Locaux & énergie</div>
+      <div class="param-row">
+        <span class="param-label">Loyer atelier / mois
+          <span class="tip">?<span class="tip-box">Loyer mensuel du local de production (Notion : ligne "Loyer"). Attention : janvier 2025 était à 30 000 MAD, le reste de l'année à 50 000 MAD — ajuster mois par mois si nécessaire.</span></span>
+        </span>
+        <div class="field-input-wrap"><input type="number" id="p-loyer" value="50000" min="0" step="500" oninput="calcParams()"><span class="field-unit">MAD</span></div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Électricité & eau / mois
+          <span class="tip">?<span class="tip-box">Factures d'électricité et d'eau de l'atelier (Notion : ligne "Electricité & eau"). Variable selon la saison : ~17 000 MAD en été, jusqu'à ~37 000 MAD en hiver.</span></span>
+        </span>
+        <div class="field-input-wrap"><input type="number" id="p-energie" value="22000" min="0" step="500" oninput="calcParams()"><span class="field-unit">MAD</span></div>
+      </div>
+    </div>
+
+    <!-- Charges fiscales & assurances -->
+    <div class="param-group">
+      <div class="param-group-title">Charges fiscales & assurances</div>
+      <div class="param-row">
+        <span class="param-label">Impôts & Patente / mois
+          <span class="tip">?<span class="tip-box">Charge fiscale récurrente (Notion : "Impôts & Patente"). Montant quasi-fixe : 18 151 MAD/mois en 2025. À mettre à jour si le montant change en cours d'année.</span></span>
+        </span>
+        <div class="field-input-wrap"><input type="number" id="p-impots" value="18151" min="0" step="100" oninput="calcParams()"><span class="field-unit">MAD</span></div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Assurances / mois
+          <span class="tip">?<span class="tip-box">Prime d'assurance mensuelle atelier et équipements (Notion : "Assurance"). Fixe en 2025 : 8 850 MAD/mois. À mettre à jour à chaque renouvellement de contrat.</span></span>
+        </span>
+        <div class="field-input-wrap"><input type="number" id="p-assurance" value="8850" min="0" step="100" oninput="calcParams()"><span class="field-unit">MAD</span></div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Téléphone & internet / mois
+          <span class="tip">?<span class="tip-box">Abonnements téléphoniques et internet de l'atelier (Notion : "Téléphone & internet"). Quasi-fixe : ~1 300 MAD/mois. À mettre à jour si les abonnements changent.</span></span>
+        </span>
+        <div class="field-input-wrap"><input type="number" id="p-tel" value="1300" min="0" step="100" oninput="calcParams()"><span class="field-unit">MAD</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="params-total">
+    <div>
+      <div class="params-total-label">Total charges fixes — <span id="p-month-label">ce mois</span></div>
+      <div class="params-total-sub" id="p-total-sub">soit — MAD / jour ouvré</div>
+    </div>
+    <div style="text-align:right">
+      <div class="params-total-val" id="p-total-mensuel">— MAD</div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-primary" onclick="saveParams(this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Enregistrer les paramètres
+    </button>
+    <button class="btn-secondary" onclick="switchTab(1)">← Retour journée</button>
+  </div>
+  <div class="footer-note">DAMAK International · Paramètres · v3.0</div>
+</div>
+
+<script>
+// ── SUPABASE CONFIG ───────────────────────────────────────────
+// Remplacez ces deux valeurs par celles de votre projet Supabase
+const SB_URL = 'https://uimakfwjndcrgtlalgty.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpbWFrZndqbmRjcmd0bGFsZ3R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5OTI0MDIsImV4cCI6MjA5MDU2ODQwMn0.DWSrLvPxU2RhT32RDmaGvkOL9czREzgHgdRY9CpnT34';
+
+async function sbLoad(key) {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/app_data?key=eq.${key}&select=value`, {
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+    });
+    const d = await r.json();
+    return (d && d.length) ? d[0].value : null;
+  } catch(e) { console.warn('Supabase load failed', e); return null; }
+}
+
+async function sbSave(key, value) {
+  try {
+    await fetch(`${SB_URL}/rest/v1/app_data`, {
+      method: 'POST',
+      headers: {
+        apikey: SB_KEY,
+        Authorization: `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ key, value })
+    });
+  } catch(e) { console.warn('Supabase save failed', e); }
+}
+
+// ── ÉTAT GLOBAL ──────────────────────────────────────────────
+const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const today = new Date();
+
+// Storage : journées et paramètres par mois
+// journees: { "2026-03-23": { date, facturees, prix_facon, heures, var_imp, ca, c_mo, mcv, net, fixes_jour } }
+// params:   { "2026-03": { taux_mo, jours, loyer, energie, impots, assurance, tel } }
+let journees = {};
+let paramsStore = {};
+let chartInstance = null;
+
+// ── INIT ─────────────────────────────────────────────────────
+async function init() {
+  document.getElementById('date-input').value = today.toISOString().split('T')[0];
+
+  // Populer les selects mois/année (dashboard + params)
+  ['db-month','p-month'].forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = MONTHS_FR.map((m,i) => `<option value="${i}"${i===today.getMonth()?' selected':''}>${m}</option>`).join('');
+  });
+
+  const yearRange = [today.getFullYear()-1, today.getFullYear(), today.getFullYear()+1];
+  ['db-year','p-year'].forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = yearRange.map(y => `<option value="${y}"${y===today.getFullYear()?' selected':''}>${y}</option>`).join('');
+  });
+
+  // Chargement depuis Supabase (priorité sur localStorage)
+  const [j, p] = await Promise.all([sbLoad('journees'), sbLoad('params')]);
+  if (j) {
+    journees = j;
+  } else {
+    try { journees = JSON.parse(localStorage.getItem('damak_journees') || '{}'); } catch(e) { journees = {}; }
+  }
+  if (p) {
+    paramsStore = p;
+  } else {
+    try { paramsStore = JSON.parse(localStorage.getItem('damak_params') || '{}'); } catch(e) { paramsStore = {}; }
+  }
+
+  loadParams();
+  calcJournee();
+  renderDashboard();
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+function switchTab(n) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===n));
+  document.querySelectorAll('.page').forEach((p,i) => p.classList.toggle('active', i===n));
+  if (n===0) renderDashboard();
+}
+
+// ── UTILITAIRES ───────────────────────────────────────────────
+function fmtN(n) {
+  const abs = Math.abs(Math.round(n));
+  return (n < 0 ? '\u2212\u202f' : '') + abs.toLocaleString('fr-FR');
+}
+function fmt(n) { return fmtN(n) + '\u202fMAD'; }
+
+function getMonthKey(month, year) { return `${year}-${String(month+1).padStart(2,'0')}`; }
+function getDateKey(dateStr) { return dateStr; }
+
+function getParamsForMonth(month, year) {
+  const key = getMonthKey(month, year);
+  return paramsStore[key] || { jours:26, loyer:50000, energie:22000, impots:18151, assurance:8850, tel:1300, charges_sociales:0 };
+}
+
+function getFixesJourForDate(dateStr) {
+  const d = new Date(dateStr);
+  const p = getParamsForMonth(d.getMonth(), d.getFullYear());
+  const total = p.loyer + p.energie + p.impots + p.assurance + p.tel + (p.charges_sociales || 0);
+  return total / p.jours;
+}
+
+// ── PARAMÈTRES ────────────────────────────────────────────────
+function loadParams() {
+  const month = +document.getElementById('p-month').value;
+  const year  = +document.getElementById('p-year').value;
+  const p = getParamsForMonth(month, year);
+  document.getElementById('p-charges-sociales').value = p.charges_sociales || 0;
+  document.getElementById('p-jours').value            = p.jours           || 26;
+  document.getElementById('p-loyer').value     = p.loyer     || 50000;
+  document.getElementById('p-energie').value   = p.energie   || 22000;
+  document.getElementById('p-impots').value    = p.impots    || 18151;
+  document.getElementById('p-assurance').value = p.assurance || 8850;
+  document.getElementById('p-tel').value       = p.tel       || 1300;
+  document.getElementById('p-month-label').textContent = MONTHS_FR[month] + ' ' + year;
+  calcParams();
+}
+
+function calcParams() {
+  const loyer     = +document.getElementById('p-loyer').value     || 0;
+  const energie   = +document.getElementById('p-energie').value   || 0;
+  const impots    = +document.getElementById('p-impots').value    || 0;
+  const assurance = +document.getElementById('p-assurance').value || 0;
+  const tel              = +document.getElementById('p-tel').value              || 0;
+  const charges_sociales = +document.getElementById('p-charges-sociales').value || 0;
+  const jours            = +document.getElementById('p-jours').value            || 26;
+  const total            = loyer + energie + impots + assurance + tel + charges_sociales;
+  const parJour   = total / jours;
+  document.getElementById('p-total-mensuel').textContent = fmt(total);
+  document.getElementById('p-total-sub').textContent = 'soit ' + fmt(parJour) + ' / jour ouvré';
+  calcJournee();
+}
+
+function saveParams(btn) {
+  const month = +document.getElementById('p-month').value;
+  const year  = +document.getElementById('p-year').value;
+  const key   = getMonthKey(month, year);
+  paramsStore[key] = {
+    charges_sociales:  +document.getElementById('p-charges-sociales').value  || 0,
+    jours:             +document.getElementById('p-jours').value             || 26,
+    loyer:             +document.getElementById('p-loyer').value             || 0,
+    energie:           +document.getElementById('p-energie').value           || 0,
+    impots:            +document.getElementById('p-impots').value            || 0,
+    assurance:         +document.getElementById('p-assurance').value         || 0,
+    tel:               +document.getElementById('p-tel').value               || 0,
+  };
+  try {
+    localStorage.setItem('damak_params', JSON.stringify(paramsStore));
+    sbSave('params', paramsStore);
+    showToast('✓ Paramètres enregistrés');
+  } catch(e) {
+    showToast('Erreur : impossible de sauvegarder (stockage plein ?)', false);
+  }
+}
+
+// ── JOURNÉE ───────────────────────────────────────────────────
+function calcJournee() {
+  const dateStr    = document.getElementById('date-input').value || today.toISOString().split('T')[0];
+  const d          = new Date(dateStr);
+  const monthKey   = getMonthKey(d.getMonth(), d.getFullYear());
+  const moisConfig = !!paramsStore[monthKey];
+  const p          = getParamsForMonth(d.getMonth(), d.getFullYear());
+  const fixes_jour = getFixesJourForDate(dateStr);
+
+  const facturees  = +document.getElementById('facturees').value     || 0;
+  const prix_facon = +document.getElementById('prix_facon').value    || 0;
+  const var_imp    = +document.getElementById('var_imprevues').value || 0;
+  const c_mo       = +document.getElementById('salaires_jour').value || 0;
+
+  const ca   = facturees * prix_facon;
+  const mcv  = ca - c_mo - var_imp;
+  const net  = mcv - fixes_jour;
+  const mmv  = ca > 0 ? mcv/ca*100 : 0;
+  const couv = fixes_jour > 0 ? Math.min(mcv/fixes_jour*100, 100) : 100;
+
+  const fixesDisplayEl = document.getElementById('fixes-display');
+  const fixesDetailEl  = document.getElementById('fixes-detail');
+  if (!moisConfig) {
+    fixesDisplayEl.textContent = '⚠ Non configuré';
+    fixesDisplayEl.style.color = '#c0251e';
+    fixesDetailEl.textContent  = 'Ce mois n\'est pas paramétré — allez dans Paramètres avant de saisir.';
+    fixesDetailEl.style.color  = '#c0251e';
+  } else {
+    fixesDisplayEl.textContent = fmt(fixes_jour);
+    fixesDisplayEl.style.color = '';
+    const totalMensuel = p.loyer + p.energie + p.impots + p.assurance + p.tel + (p.charges_sociales || 0);
+    let fixesDetail = fmt(totalMensuel) + ' / mois ÷ ' + p.jours + ' j';
+    if (p.charges_sociales > 0) fixesDetail += ' (dont ch. soc. ' + fmt(p.charges_sociales/p.jours) + '/j)';
+    fixesDetailEl.textContent = fixesDetail;
+    fixesDetailEl.style.color = '';
+  }
+
+  document.getElementById('k-ca').textContent      = fmtN(ca);
+  document.getElementById('k-charges').textContent = fmtN(c_mo + var_imp + fixes_jour);
+  document.getElementById('k-mmv').textContent     = mmv.toFixed(1) + '%';
+
+  document.getElementById('b-ca').textContent  = fmt(ca);
+  document.getElementById('b-mo').textContent  = '− ' + fmt(c_mo);
+  document.getElementById('b-var').textContent = '− ' + fmt(var_imp);
+  document.getElementById('b-mcv').textContent = fmt(mcv);
+  document.getElementById('b-fix').textContent = '− ' + fmt(fixes_jour);
+  const netEl = document.getElementById('b-net');
+  netEl.textContent = fmt(net);
+  netEl.style.color = net >= 0 ? '#16803c' : '#c0251e';
+
+  const bar = document.getElementById('seuil-bar');
+  bar.style.width      = Math.max(0,couv) + '%';
+  bar.style.background = couv >= 100 ? '#16803c' : couv > 60 ? '#b45309' : '#c0251e';
+  document.getElementById('seuil-pct').textContent = Math.round(couv) + '%';
+
+  const verd = document.getElementById('verdict');
+  const icon = document.getElementById('v-icon');
+  if (net > 200) {
+    verd.className = 'verdict win';
+    document.getElementById('v-label').textContent  = 'Journée gagnante';
+    document.getElementById('v-amount').textContent = '+' + fmt(net);
+    icon.innerHTML = '<polyline points="20 6 9 17 4 12"/>';
+    document.getElementById('v-d1').textContent = 'Marge nette : ' + (ca>0?(net/ca*100).toFixed(1):0) + '%';
+    document.getElementById('v-d2').textContent = 'Couverture fixes : ' + Math.round(couv) + '%';
+  } else if (net < -200) {
+    verd.className = 'verdict lose';
+    document.getElementById('v-label').textContent  = 'Journée perdante';
+    document.getElementById('v-amount').textContent = fmt(net);
+    icon.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
+    document.getElementById('v-d1').textContent = 'Manque ' + fmt(-net) + ' de CA';
+    document.getElementById('v-d2').textContent = 'Couverture fixes : ' + Math.round(couv) + '%';
+  } else {
+    verd.className = 'verdict flat';
+    document.getElementById('v-label').textContent  = 'Équilibre';
+    document.getElementById('v-amount').textContent = fmt(net);
+    icon.innerHTML = '<line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/>';
+    document.getElementById('v-d1').textContent = 'À la limite du seuil';
+    document.getElementById('v-d2').textContent = 'Couverture fixes : ' + Math.round(couv) + '%';
+  }
+}
+
+function saveDay(btn) {
+  const dateStr    = document.getElementById('date-input').value || today.toISOString().split('T')[0];
+  const d          = new Date(dateStr);
+  const monthKey   = getMonthKey(d.getMonth(), d.getFullYear());
+  if (!paramsStore[monthKey]) {
+    showToast('⚠ ' + MONTHS_FR[d.getMonth()] + ' ' + d.getFullYear() + ' n\'est pas paramétré — configurez ce mois d\'abord.', false);
+    return;
+  }
+  const fixes_jour = getFixesJourForDate(dateStr);
+  const facturees  = +document.getElementById('facturees').value     || 0;
+  const prix_facon = +document.getElementById('prix_facon').value    || 0;
+  const var_imp    = +document.getElementById('var_imprevues').value || 0;
+  const c_mo       = +document.getElementById('salaires_jour').value || 0;
+  const ca   = facturees * prix_facon;
+  const mcv  = ca - c_mo - var_imp;
+  const net  = mcv - fixes_jour;
+
+  const doSave = () => {
+    journees[dateStr] = { date:dateStr, facturees, prix_facon, var_imp, ca, c_mo, mcv, net, fixes_jour };
+    try {
+      localStorage.setItem('damak_journees', JSON.stringify(journees));
+      sbSave('journees', journees);
+      showToast('✓ Journée enregistrée');
+      document.getElementById('edit-banner').style.display = 'none';
+      document.querySelector('#page-1 .btn-primary').innerHTML =
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enregistrer et voir dans le dashboard';
+      setTimeout(() => switchTab(0), 900);
+    } catch(e) {
+      showToast('Erreur : impossible de sauvegarder (stockage plein ?)', false);
+    }
+  };
+
+  if (journees[dateStr]) {
+    showConfirm(`Une journée existe déjà pour le ${fmtDate(dateStr)}. Remplacer ?`, doSave);
+  } else {
+    doSave();
+  }
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────
+function renderDashboard() {
+  const month = +document.getElementById('db-month').value;
+  const year  = +document.getElementById('db-year').value;
+  const key   = getMonthKey(month, year);
+
+  // Filtrer les journées du mois sélectionné
+  const days = Object.values(journees)
+    .filter(j => j.date.startsWith(key))
+    .sort((a,b) => a.date.localeCompare(b.date));
+
+  if (days.length === 0) {
+    document.getElementById('db-ca').textContent = '—';
+    document.getElementById('db-net').textContent = '—';
+    document.getElementById('db-net-sub').textContent = 'MAD ce mois';
+    document.getElementById('db-best').textContent = '—';
+    document.getElementById('db-best-date').textContent = '—';
+    document.getElementById('db-worst').textContent = '—';
+    document.getElementById('db-worst-date').textContent = '—';
+    document.getElementById('db-wins').textContent = '0';
+    document.getElementById('db-losses').textContent = '0';
+    document.getElementById('db-ratio-label').textContent = '0 jour enregistré';
+    document.getElementById('db-ratio-win').style.width = '50%';
+    document.getElementById('db-ratio-lose').style.width = '50%';
+    document.getElementById('db-day-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div>Aucune journée enregistrée pour ' + MONTHS_FR[month] + ' ' + year + '.</div>';
+    renderChart([]);
+    return;
+  }
+
+  const totalCA  = days.reduce((s,d) => s+d.ca,  0);
+  const totalNet = days.reduce((s,d) => s+d.net, 0);
+  const wins     = days.filter(d => d.net > 200).length;
+  const losses   = days.filter(d => d.net < -200).length;
+  const best     = days.reduce((a,b) => a.net>b.net?a:b);
+  const worst    = days.reduce((a,b) => a.net<b.net?a:b);
+  const winPct   = days.length > 0 ? (wins/days.length*100) : 50;
+
+  document.getElementById('db-ca').textContent = fmtN(totalCA);
+  document.getElementById('db-net').textContent = (totalNet>=0?'+':'')+fmtN(totalNet);
+  document.getElementById('db-net').style.color = totalNet>=0?'#16803c':'#c0251e';
+  document.getElementById('db-net-sub').textContent = 'MAD · ' + days.length + ' j enregistrés';
+  document.getElementById('db-best').textContent = '+'+fmt(best.net);
+  document.getElementById('db-best-date').textContent = fmtDate(best.date);
+  document.getElementById('db-worst').textContent = fmt(worst.net);
+  document.getElementById('db-worst-date').textContent = fmtDate(worst.date);
+  document.getElementById('db-wins').textContent = wins;
+  document.getElementById('db-losses').textContent = losses;
+  document.getElementById('db-ratio-label').textContent = days.length + ' jour' + (days.length>1?'s':'') + ' enregistré' + (days.length>1?'s':'');
+  document.getElementById('db-ratio-win').style.width  = winPct + '%';
+  document.getElementById('db-ratio-lose').style.width = (100-winPct) + '%';
+
+  // Liste journées
+  const maxAbs = Math.max(...days.map(d=>Math.abs(d.net)), 1);
+  document.getElementById('db-day-list').innerHTML = [...days].reverse().map(d => {
+    const pct   = (Math.abs(d.net)/maxAbs*100).toFixed(1);
+    const c     = d.net>200?'#16803c':d.net<-200?'#c0251e':'#b45309';
+    const badge = d.net>200?'<span class="day-badge badge-win">Gagnant</span>':d.net<-200?'<span class="day-badge badge-lose">Perdant</span>':'<span class="day-badge badge-flat">Équilibre</span>';
+    const iconEdit = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+    const iconDel  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+    return `<div class="day-row">
+      <span class="day-date">${fmtDate(d.date)}</span>
+      <div class="day-bar-wrap"><div class="day-bar" style="width:${pct}%;background:${c}"></div></div>
+      <span class="day-val" style="color:${c}">${(d.net>=0?'+':'')+fmt(d.net)}</span>
+      ${badge}
+      <div class="day-actions">
+        <button class="day-btn edit" onclick="editDay('${d.date}')" title="Modifier">${iconEdit}</button>
+        <button class="day-btn del"  onclick="deleteDay('${d.date}')" title="Supprimer">${iconDel}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  renderChart(days);
+}
+
+function fmtDate(str) {
+  const d = new Date(str);
+  return d.toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit'});
+}
+
+function renderChart(days) {
+  const canvas = document.getElementById('db-chart');
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  if (days.length === 0) return;
+
+  const labels = days.map(d => { const dt=new Date(d.date); return dt.getDate()+'/'+(dt.getMonth()+1); });
+  const nets   = days.map(d => Math.round(d.net));
+  const colors = nets.map(n => n>=0?'rgba(22,128,60,0.8)':'rgba(192,37,30,0.8)');
+
+  chartInstance = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: nets,
+        backgroundColor: colors,
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display:false }, tooltip: {
+        callbacks: { label: ctx => (ctx.parsed.y>=0?'+':'')+Math.round(ctx.parsed.y).toLocaleString('fr-FR')+' MAD' }
+      }},
+      scales: {
+        x: { grid:{display:false}, ticks:{font:{family:'IBM Plex Mono',size:10},color:'#a8a59f'} },
+        y: { grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{family:'IBM Plex Mono',size:10},color:'#a8a59f', callback:v=>fmtN(v)} }
+      }
+    }
+  });
+}
+
+function editDay(dateStr) {
+  const j = journees[dateStr];
+  if (!j) return;
+  document.getElementById('date-input').value      = j.date;
+  document.getElementById('facturees').value        = j.facturees;
+  document.getElementById('prix_facon').value       = j.prix_facon;
+  document.getElementById('salaires_jour').value    = j.c_mo || 0;
+  document.getElementById('var_imprevues').value    = j.var_imp || 0;
+  // Bandeau édition
+  const banner = document.getElementById('edit-banner');
+  document.getElementById('edit-banner-text').textContent = 'Modification de la journée du ' + fmtDate(dateStr);
+  banner.style.display = 'flex';
+  document.querySelector('#page-1 .btn-primary').innerHTML =
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Mettre à jour';
+  switchTab(1);
+  calcJournee();
+}
+
+function cancelEdit() {
+  document.getElementById('edit-banner').style.display = 'none';
+  document.getElementById('date-input').value   = today.toISOString().split('T')[0];
+  document.getElementById('facturees').value     = 280;
+  document.getElementById('prix_facon').value    = 65;
+  document.getElementById('salaires_jour').value = 0;
+  document.getElementById('var_imprevues').value = 0;
+  document.querySelector('#page-1 .btn-primary').innerHTML =
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enregistrer et voir dans le dashboard';
+  calcJournee();
+}
+
+function goToParamsForCurrentDate() {
+  const dateStr = document.getElementById('date-input').value || today.toISOString().split('T')[0];
+  const d = new Date(dateStr);
+  document.getElementById('p-month').value = d.getMonth();
+  document.getElementById('p-year').value  = d.getFullYear();
+  loadParams();
+  switchTab(2);
+}
+
+function deleteDay(dateStr) {
+  // Remplace la ligne par une confirmation inline
+  const rows = document.querySelectorAll('.day-row');
+  rows.forEach(row => {
+    const editBtn = row.querySelector('.day-btn.edit');
+    if (editBtn && editBtn.getAttribute('onclick').includes(dateStr)) {
+      row.innerHTML = `
+        <span style="font-size:12px;color:var(--text-muted);flex:1">Supprimer la journée du <strong style="color:var(--text)">${fmtDate(dateStr)}</strong> ?</span>
+        <button onclick="confirmDelete('${dateStr}')" style="background:var(--red);color:#fff;border:none;border-radius:6px;padding:5px 14px;font-family:var(--mono);font-size:11px;cursor:pointer;margin-left:8px">Confirmer</button>
+        <button onclick="renderDashboard()" style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border-strong);border-radius:6px;padding:5px 12px;font-family:var(--mono);font-size:11px;cursor:pointer;margin-left:6px">Annuler</button>
+      `;
+      row.style.background = '#fef2f2';
+      row.style.borderColor = '#fca5a5';
+      row.style.padding = '8px';
+    }
+  });
+}
+
+function confirmDelete(dateStr) {
+  delete journees[dateStr];
+  try {
+    localStorage.setItem('damak_journees', JSON.stringify(journees));
+    sbSave('journees', journees);
+    showToast('Journée supprimée');
+  } catch(e) {
+    showToast('Erreur lors de la suppression', false);
+  }
+  renderDashboard();
+}
+
+// ── MODAL CONFIRM ─────────────────────────────────────────────
+function showConfirm(msg, onOk) {
+  const modal = document.getElementById('confirm-modal');
+  document.getElementById('confirm-msg').textContent = msg;
+  modal.style.display = 'flex';
+  document.getElementById('confirm-ok').onclick = () => { modal.style.display = 'none'; onOk(); };
+  document.getElementById('confirm-cancel').onclick = () => { modal.style.display = 'none'; };
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function showToast(msg, ok = true) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = ok ? '#16803c' : '#c0251e';
+  el.style.display = 'block';
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => { el.style.display = 'none'; }, 300);
+  }, 2500);
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+function exportData() {
+  const data = { journees, params: paramsStore, exported: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `damak_backup_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.journees) journees = data.journees;
+      if (data.params)   paramsStore = data.params;
+      localStorage.setItem('damak_journees', JSON.stringify(journees));
+      localStorage.setItem('damak_params',   JSON.stringify(paramsStore));
+      sbSave('journees', journees);
+      sbSave('params', paramsStore);
+      showToast('✓ Données importées avec succès');
+      renderDashboard();
+      loadParams();
+    } catch(err) {
+      showToast('Fichier invalide — import annulé', false);
+    }
+  };
+  reader.readAsText(file);
+}
+
+init();
+</script>
+<div id="toast"></div>
+<input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(this.files[0])">
+<!-- Modal de confirmation -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px 24px 20px;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <div id="confirm-msg" style="font-size:14px;color:var(--text);line-height:1.5;margin-bottom:20px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button id="confirm-cancel" style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border-strong);border-radius:7px;padding:7px 16px;font-family:var(--mono);font-size:12px;cursor:pointer">Annuler</button>
+      <button id="confirm-ok" style="background:var(--red);color:#fff;border:none;border-radius:7px;padding:7px 16px;font-family:var(--mono);font-size:12px;cursor:pointer;font-weight:500">Remplacer</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
