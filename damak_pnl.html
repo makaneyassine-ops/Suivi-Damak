@@ -169,15 +169,34 @@ select:focus{border-color:var(--blue)}
   .kpi-row,.stat-cards{grid-template-columns:repeat(2,1fr)}
   .v-meta{display:none}
 }
+
+/* LOADING OVERLAY */
+.loading-overlay{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--border-strong);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-faint);text-transform:uppercase}
+
+/* ANNUAL TABLE */
+.an-table{width:100%;border-collapse:collapse}
+.an-table td,.an-table th{padding:9px 8px;border-bottom:1px solid var(--border)}
+.an-table tbody tr:last-child td{border-bottom:none}
+.an-table tbody tr:hover{background:var(--surface2)}
+.an-tfoot td{border-top:1.5px solid var(--border-strong);border-bottom:none;font-weight:600;padding-top:12px}
 </style>
 </head>
 <body>
+
+<div id="loading-overlay" class="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Chargement en cours…</div>
+</div>
 
 <div class="tabs-bar">
   <div class="tab-logo">DAMAK</div>
   <div class="tab active" onclick="switchTab(0)">Dashboard</div>
   <div class="tab" onclick="switchTab(1)">Journée</div>
   <div class="tab" onclick="switchTab(2)">Paramètres</div>
+  <div class="tab" onclick="switchTab(3)">Année</div>
 </div>
 
 <!-- ═══════════════ DASHBOARD ═══════════════ -->
@@ -298,17 +317,17 @@ select:focus{border-color:var(--blue)}
       <div class="panel-title">Saisie du jour</div>
 
       <div class="field"><div class="field-row">
-        <span class="field-label">Pièces produites
-          <span class="tip">?<span class="tip-box">Nombre de pièces sorties de production aujourd'hui, toutes commandes confondues. La facturation et la livraison sont gérées séparément.</span></span>
+        <span class="field-label">Pièces façonnées du jour
+          <span class="tip">?<span class="tip-box">Nombre de pièces effectivement travaillées aujourd'hui. Sert de base au CA façon (pièces × prix). Saisir les pièces travaillées, qu'elles soient livrées ou non.</span></span>
         </span>
-        <div class="field-input-wrap"><input type="number" id="facturees" value="280" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
+        <div class="field-input-wrap"><input type="number" id="facturees" value="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
       </div></div>
 
       <div class="field"><div class="field-row">
         <span class="field-label">Prix de façon / pièce
-          <span class="tip">?<span class="tip-box">Tarif façon moyen facturé au client. Le tissu et les fournitures sont fournis par le client — ils ne rentrent pas dans ce calcul.</span></span>
+          <span class="tip">?<span class="tip-box">Tarif façon moyen du jour. Le tissu et les fournitures sont fournis par le client — ils ne rentrent pas dans ce calcul.</span></span>
         </span>
-        <div class="field-input-wrap"><input type="number" id="prix_facon" value="65" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+        <div class="field-input-wrap"><input type="number" id="prix_facon" value="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
       </div></div>
 
       <div class="field"><div class="field-row">
@@ -466,6 +485,65 @@ select:focus{border-color:var(--blue)}
   <div class="footer-note">DAMAK International · Paramètres · v3.0</div>
 </div>
 
+<!-- ═══════════════ ANNÉE ═══════════════ -->
+<div class="page" id="page-3">
+  <div class="page-header">
+    <div class="page-title">Récapitulatif annuel</div>
+    <select id="an-year" onchange="renderAnnual()"></select>
+  </div>
+
+  <div class="stat-cards">
+    <div class="stat-card">
+      <div class="stat-card-label">CA façon</div>
+      <div class="stat-card-value" id="an-total-ca">—</div>
+      <div class="stat-card-sub">MAD sur l'année</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Résultat net</div>
+      <div class="stat-card-value" id="an-total-net">—</div>
+      <div class="stat-card-sub" id="an-total-days">— jours saisis</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Jours gagnants</div>
+      <div class="stat-card-value" style="color:var(--green)" id="an-total-wins">—</div>
+      <div class="stat-card-sub">sur l'année</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Jours perdants</div>
+      <div class="stat-card-value" style="color:var(--red)" id="an-total-losses">—</div>
+      <div class="stat-card-sub">sur l'année</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Détail par mois</div>
+    <table class="an-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);padding-bottom:10px;font-weight:500">Mois</th>
+          <th style="text-align:center;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);padding-bottom:10px;font-weight:500">Jours</th>
+          <th style="text-align:right;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);padding-bottom:10px;font-weight:500">CA (MAD)</th>
+          <th style="text-align:right;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);padding-bottom:10px;font-weight:500">Net (MAD)</th>
+          <th style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--green);padding-bottom:10px;font-weight:500">▲ Gagnants</th>
+          <th style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--red);padding-bottom:10px;font-weight:500">▼ Perdants</th>
+        </tr>
+      </thead>
+      <tbody id="an-tbody"></tbody>
+      <tfoot>
+        <tr class="an-tfoot">
+          <td style="font-family:var(--mono);font-size:12px;color:var(--text)">Total</td>
+          <td style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-muted)" id="an-foot-days">—</td>
+          <td style="text-align:right;font-family:var(--mono);font-size:13px;color:var(--text)" id="an-foot-ca">—</td>
+          <td style="text-align:right;font-family:var(--mono);font-size:13px" id="an-foot-net">—</td>
+          <td style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--green)" id="an-foot-wins">—</td>
+          <td style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--red)" id="an-foot-losses">—</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div class="footer-note">DAMAK International · Récap annuel · v3.0</div>
+</div>
+
 <script>
 // ── SUPABASE CONFIG ───────────────────────────────────────────
 // Remplacez ces deux valeurs par celles de votre projet Supabase
@@ -510,17 +588,19 @@ let chartInstance = null;
 
 // ── INIT ─────────────────────────────────────────────────────
 async function init() {
+  document.getElementById('loading-overlay').style.display = 'flex';
   document.getElementById('date-input').value = today.toISOString().split('T')[0];
 
-  // Populer les selects mois/année (dashboard + params)
+  // Populer les selects mois/année (dashboard + params + annuel)
   ['db-month','p-month'].forEach(id => {
     const el = document.getElementById(id);
     el.innerHTML = MONTHS_FR.map((m,i) => `<option value="${i}"${i===today.getMonth()?' selected':''}>${m}</option>`).join('');
   });
 
-  const yearRange = [today.getFullYear()-1, today.getFullYear(), today.getFullYear()+1];
-  ['db-year','p-year'].forEach(id => {
+  const yearRange = [today.getFullYear()-2, today.getFullYear()-1, today.getFullYear(), today.getFullYear()+1, today.getFullYear()+2];
+  ['db-year','p-year','an-year'].forEach(id => {
     const el = document.getElementById(id);
+    if (!el) return;
     el.innerHTML = yearRange.map(y => `<option value="${y}"${y===today.getFullYear()?' selected':''}>${y}</option>`).join('');
   });
 
@@ -537,6 +617,7 @@ async function init() {
     try { paramsStore = JSON.parse(localStorage.getItem('damak_params') || '{}'); } catch(e) { paramsStore = {}; }
   }
 
+  document.getElementById('loading-overlay').style.display = 'none';
   loadParams();
   calcJournee();
   renderDashboard();
@@ -547,6 +628,7 @@ function switchTab(n) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===n));
   document.querySelectorAll('.page').forEach((p,i) => p.classList.toggle('active', i===n));
   if (n===0) renderDashboard();
+  if (n===3) renderAnnual();
 }
 
 // ── UTILITAIRES ───────────────────────────────────────────────
@@ -642,7 +724,7 @@ function calcJournee() {
   const mcv  = ca - c_mo - var_imp;
   const net  = mcv - fixes_jour;
   const mmv  = ca > 0 ? mcv/ca*100 : 0;
-  const couv = fixes_jour > 0 ? Math.min(mcv/fixes_jour*100, 100) : 100;
+  const couv = fixes_jour > 0 ? mcv/fixes_jour*100 : 100;
 
   const fixesDisplayEl = document.getElementById('fixes-display');
   const fixesDetailEl  = document.getElementById('fixes-detail');
@@ -675,7 +757,7 @@ function calcJournee() {
   netEl.style.color = net >= 0 ? '#16803c' : '#c0251e';
 
   const bar = document.getElementById('seuil-bar');
-  bar.style.width      = Math.max(0,couv) + '%';
+  bar.style.width      = Math.max(0, Math.min(couv, 100)) + '%';
   bar.style.background = couv >= 100 ? '#16803c' : couv > 60 ? '#b45309' : '#c0251e';
   document.getElementById('seuil-pct').textContent = Math.round(couv) + '%';
 
@@ -830,30 +912,94 @@ function renderChart(days) {
 
   const labels = days.map(d => { const dt=new Date(d.date); return dt.getDate()+'/'+(dt.getMonth()+1); });
   const nets   = days.map(d => Math.round(d.net));
-  const colors = nets.map(n => n>=0?'rgba(22,128,60,0.8)':'rgba(192,37,30,0.8)');
+  const cas    = days.map(d => Math.round(d.ca));
+  const colors = nets.map(n => n>=0?'rgba(22,128,60,0.75)':'rgba(192,37,30,0.75)');
 
   chartInstance = new Chart(canvas, {
     type: 'bar',
     data: {
       labels,
-      datasets: [{
-        data: nets,
-        backgroundColor: colors,
-        borderRadius: 4,
-        borderSkipped: false,
-      }]
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Résultat net',
+          data: nets,
+          backgroundColor: colors,
+          borderRadius: 4,
+          borderSkipped: false,
+          order: 2,
+        },
+        {
+          type: 'line',
+          label: 'CA façon',
+          data: cas,
+          borderColor: 'rgba(29,95,196,0.7)',
+          backgroundColor: 'rgba(29,95,196,0.07)',
+          borderWidth: 1.5,
+          pointRadius: 2.5,
+          pointBackgroundColor: 'rgba(29,95,196,0.9)',
+          fill: true,
+          tension: 0.3,
+          order: 1,
+        }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display:false }, tooltip: {
-        callbacks: { label: ctx => (ctx.parsed.y>=0?'+':'')+Math.round(ctx.parsed.y).toLocaleString('fr-FR')+' MAD' }
-      }},
+      plugins: {
+        legend: { display:true, labels:{ font:{family:'IBM Plex Mono',size:10}, color:'#a8a59f', boxWidth:12, padding:14 } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label+' : '+(ctx.parsed.y>=0?'+':'')+Math.round(ctx.parsed.y).toLocaleString('fr-FR')+' MAD' } }
+      },
       scales: {
         x: { grid:{display:false}, ticks:{font:{family:'IBM Plex Mono',size:10},color:'#a8a59f'} },
         y: { grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{family:'IBM Plex Mono',size:10},color:'#a8a59f', callback:v=>fmtN(v)} }
       }
     }
   });
+}
+
+// ── RÉCAP ANNUEL ──────────────────────────────────────────────
+function renderAnnual() {
+  const year = +document.getElementById('an-year').value;
+  let totalCA = 0, totalNet = 0, totalWins = 0, totalLosses = 0, totalDays = 0;
+
+  const rows = MONTHS_FR.map((mois, m) => {
+    const key  = getMonthKey(m, year);
+    const days = Object.values(journees).filter(j => j.date.startsWith(key));
+    if (days.length === 0) {
+      return `<tr><td style="font-family:var(--mono);font-size:12px;color:var(--text-muted);padding:9px 8px">${mois}</td>
+        <td colspan="5" style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--text-faint);padding:9px 8px">—</td></tr>`;
+    }
+    const ca   = days.reduce((s,d) => s+d.ca,  0);
+    const net  = days.reduce((s,d) => s+d.net, 0);
+    const wins = days.filter(d => d.net >  200).length;
+    const loss = days.filter(d => d.net < -200).length;
+    totalCA += ca; totalNet += net; totalWins += wins; totalLosses += loss; totalDays += days.length;
+    const nc = net >= 0 ? 'var(--green)' : 'var(--red)';
+    return `<tr>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--text)">${mois}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-muted)">${days.length}</td>
+      <td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--text)">${fmtN(ca)}</td>
+      <td style="text-align:right;font-family:var(--mono);font-size:12px;color:${nc};font-weight:500">${(net>=0?'+':'')+fmtN(net)}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--green)">${wins}</td>
+      <td style="text-align:center;font-family:var(--mono);font-size:12px;color:var(--red)">${loss}</td>
+    </tr>`;
+  });
+
+  document.getElementById('an-tbody').innerHTML = rows.join('');
+  const tnc = totalNet >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('an-total-ca').textContent       = fmtN(totalCA);
+  document.getElementById('an-total-net').textContent      = (totalNet>=0?'+':'')+fmtN(totalNet);
+  document.getElementById('an-total-net').style.color      = tnc;
+  document.getElementById('an-total-days').textContent     = totalDays + ' jour' + (totalDays>1?'s':'') + ' saisis';
+  document.getElementById('an-total-wins').textContent     = totalWins;
+  document.getElementById('an-total-losses').textContent   = totalLosses;
+  document.getElementById('an-foot-days').textContent      = totalDays;
+  document.getElementById('an-foot-ca').textContent        = fmtN(totalCA);
+  document.getElementById('an-foot-net').textContent       = (totalNet>=0?'+':'')+fmtN(totalNet);
+  document.getElementById('an-foot-net').style.color       = tnc;
+  document.getElementById('an-foot-wins').textContent      = totalWins;
+  document.getElementById('an-foot-losses').textContent    = totalLosses;
 }
 
 function editDay(dateStr) {
@@ -877,8 +1023,8 @@ function editDay(dateStr) {
 function cancelEdit() {
   document.getElementById('edit-banner').style.display = 'none';
   document.getElementById('date-input').value   = today.toISOString().split('T')[0];
-  document.getElementById('facturees').value     = 280;
-  document.getElementById('prix_facon').value    = 65;
+  document.getElementById('facturees').value     = 0;
+  document.getElementById('prix_facon').value    = 0;
   document.getElementById('salaires_jour').value = 0;
   document.getElementById('var_imprevues').value = 0;
   document.querySelector('#page-1 .btn-primary').innerHTML =
