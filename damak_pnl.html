@@ -182,6 +182,20 @@ select:focus{border-color:var(--blue)}
 .an-table tbody tr:last-child td{border-bottom:none}
 .an-table tbody tr:hover{background:var(--surface2)}
 .an-tfoot td{border-top:1.5px solid var(--border-strong);border-bottom:none;font-weight:600;padding-top:12px}
+
+/* CHAINS INPUT */
+.chain-row{display:grid;grid-template-columns:1fr 72px auto 72px auto 88px 28px;gap:6px;align-items:center;margin-bottom:6px}
+.chain-input{background:var(--surface2);border:1px solid var(--border-strong);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text);outline:none;width:100%;transition:border-color .15s;-moz-appearance:textfield}
+.chain-input::-webkit-outer-spin-button,.chain-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.chain-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,95,196,.1)}
+.chain-unit{font-family:var(--mono);font-size:10px;color:var(--text-faint)}
+.chain-subtotal{font-family:var(--mono);font-size:11px;color:var(--blue);text-align:right;white-space:nowrap}
+.chain-del{width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text-faint);display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:15px;line-height:1}
+.chain-del:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+.chains-total{display:flex;justify-content:space-between;align-items:center;padding:8px 0 2px;border-top:1px dashed var(--border-strong);margin-top:6px}
+.chains-add{background:none;border:1px dashed var(--border-strong);border-radius:7px;width:100%;padding:7px;font-family:var(--mono);font-size:11px;color:var(--text-muted);cursor:pointer;margin-top:6px;transition:all .15s;letter-spacing:.04em}
+.chains-add:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+@media(max-width:620px){.chain-row{grid-template-columns:1fr 58px auto 58px auto 76px 24px;gap:4px}}
 </style>
 </head>
 <body>
@@ -266,6 +280,11 @@ select:focus{border-color:var(--blue)}
     </div>
   </div>
 
+  <div class="panel" id="db-chains-panel" style="display:none;margin-bottom:12px">
+    <div class="panel-title">Répartition par chaîne</div>
+    <div id="db-chains-body"></div>
+  </div>
+
   <div class="panel">
     <div class="panel-title">Détail des journées enregistrées</div>
     <div class="day-list" id="db-day-list">
@@ -316,19 +335,36 @@ select:focus{border-color:var(--blue)}
     <div class="panel">
       <div class="panel-title">Saisie du jour</div>
 
-      <div class="field"><div class="field-row">
-        <span class="field-label">Pièces façonnées du jour
-          <span class="tip">?<span class="tip-box">Nombre de pièces effectivement travaillées aujourd'hui. Sert de base au CA façon (pièces × prix). Saisir les pièces travaillées, qu'elles soient livrées ou non.</span></span>
-        </span>
-        <div class="field-input-wrap"><input type="number" id="facturees" value="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
-      </div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.875rem;margin-bottom:.75rem">
+        <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--blue);font-weight:500;margin-bottom:.75rem">Chaîne 1</div>
+        <div class="field"><div class="field-row">
+          <span class="field-label">Pièces façonnées</span>
+          <div class="field-input-wrap"><input type="number" id="c1_pcs" value="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
+        </div></div>
+        <div class="field" style="margin-bottom:0"><div class="field-row">
+          <span class="field-label">Prix de façon / pièce</span>
+          <div class="field-input-wrap"><input type="number" id="c1_prix" value="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+        </div></div>
+        <div style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--blue);margin-top:6px">= <span id="c1_ca">0 MAD</span></div>
+      </div>
 
-      <div class="field"><div class="field-row">
-        <span class="field-label">Prix de façon / pièce
-          <span class="tip">?<span class="tip-box">Tarif façon moyen du jour. Le tissu et les fournitures sont fournis par le client — ils ne rentrent pas dans ce calcul.</span></span>
-        </span>
-        <div class="field-input-wrap"><input type="number" id="prix_facon" value="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
-      </div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.875rem;margin-bottom:.75rem">
+        <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);font-weight:500;margin-bottom:.75rem">Chaîne 2 <em style="text-transform:none;letter-spacing:0">(optionnel)</em></div>
+        <div class="field"><div class="field-row">
+          <span class="field-label">Pièces façonnées</span>
+          <div class="field-input-wrap"><input type="number" id="c2_pcs" value="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
+        </div></div>
+        <div class="field" style="margin-bottom:0"><div class="field-row">
+          <span class="field-label">Prix de façon / pièce</span>
+          <div class="field-input-wrap"><input type="number" id="c2_prix" value="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+        </div></div>
+        <div style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-top:6px">= <span id="c2_ca">—</span></div>
+      </div>
+
+      <div class="chains-total">
+        <span style="font-size:11px;font-family:var(--mono);color:var(--text-muted)">Total : <span id="chains-total-pcs">0 pcs</span></span>
+        <span style="font-family:var(--mono);font-size:13px;font-weight:500;color:var(--blue)" id="chains-total-ca">0 MAD</span>
+      </div>
 
       <div class="field"><div class="field-row">
         <span class="field-label">Salaires du jour
@@ -706,6 +742,18 @@ function saveParams(btn) {
   }
 }
 
+// ── CHAÎNES ───────────────────────────────────────────────────
+function getChainsData() {
+  const c1p = +document.getElementById('c1_pcs').value  || 0;
+  const c1x = +document.getElementById('c1_prix').value || 0;
+  const c2p = +document.getElementById('c2_pcs').value  || 0;
+  const c2x = +document.getElementById('c2_prix').value || 0;
+  return [
+    { nom: 'Chaîne 1', pcs: c1p, prix: c1x },
+    { nom: 'Chaîne 2', pcs: c2p, prix: c2x }
+  ].filter(c => c.pcs > 0);
+}
+
 // ── JOURNÉE ───────────────────────────────────────────────────
 function calcJournee() {
   const dateStr    = document.getElementById('date-input').value || today.toISOString().split('T')[0];
@@ -715,12 +763,21 @@ function calcJournee() {
   const p          = getParamsForMonth(d.getMonth(), d.getFullYear());
   const fixes_jour = getFixesJourForDate(dateStr);
 
-  const facturees  = +document.getElementById('facturees').value     || 0;
-  const prix_facon = +document.getElementById('prix_facon').value    || 0;
+  const c1p = +document.getElementById('c1_pcs').value  || 0;
+  const c1x = +document.getElementById('c1_prix').value || 0;
+  const c2p = +document.getElementById('c2_pcs').value  || 0;
+  const c2x = +document.getElementById('c2_prix').value || 0;
+  const c1_ca = c1p * c1x;
+  const c2_ca = c2p * c2x;
+  const ca        = c1_ca + c2_ca;
+  const facturees = c1p + c2p;
+  document.getElementById('c1_ca').textContent = c1_ca > 0 ? fmt(c1_ca) : '0 MAD';
+  document.getElementById('c2_ca').textContent = c2_ca > 0 ? fmt(c2_ca) : '—';
+  document.getElementById('chains-total-pcs').textContent = facturees.toLocaleString('fr-FR') + ' pcs';
+  document.getElementById('chains-total-ca').textContent  = fmt(ca);
+
   const var_imp    = +document.getElementById('var_imprevues').value || 0;
   const c_mo       = +document.getElementById('salaires_jour').value || 0;
-
-  const ca   = facturees * prix_facon;
   const mcv  = ca - c_mo - var_imp;
   const net  = mcv - fixes_jour;
   const mmv  = ca > 0 ? mcv/ca*100 : 0;
@@ -796,16 +853,17 @@ function saveDay(btn) {
     return;
   }
   const fixes_jour = getFixesJourForDate(dateStr);
-  const facturees  = +document.getElementById('facturees').value     || 0;
-  const prix_facon = +document.getElementById('prix_facon').value    || 0;
+  const chains     = getChainsData().filter(c => c.pcs > 0);
+  const facturees  = chains.reduce((s,c) => s + c.pcs, 0);
+  const ca         = chains.reduce((s,c) => s + c.pcs * c.prix, 0);
+  const prix_facon = facturees > 0 ? ca / facturees : 0;
   const var_imp    = +document.getElementById('var_imprevues').value || 0;
   const c_mo       = +document.getElementById('salaires_jour').value || 0;
-  const ca   = facturees * prix_facon;
   const mcv  = ca - c_mo - var_imp;
   const net  = mcv - fixes_jour;
 
   const doSave = () => {
-    journees[dateStr] = { date:dateStr, facturees, prix_facon, var_imp, ca, c_mo, mcv, net, fixes_jour };
+    journees[dateStr] = { date:dateStr, chains, facturees, prix_facon, var_imp, ca, c_mo, mcv, net, fixes_jour };
     try {
       localStorage.setItem('damak_journees', JSON.stringify(journees));
       sbSave('journees', journees);
@@ -898,6 +956,55 @@ function renderDashboard() {
   }).join('');
 
   renderChart(days);
+  renderChainBreakdown(days);
+}
+
+function renderChainBreakdown(days) {
+  const panel = document.getElementById('db-chains-panel');
+  const body  = document.getElementById('db-chains-body');
+  if (!panel || !body) return;
+
+  const chainMap = {};
+  days.forEach(day => {
+    const chains = day.chains && day.chains.length > 0
+      ? day.chains
+      : (day.facturees ? [{ nom: 'Production', pcs: day.facturees, prix: day.prix_facon || 0 }] : []);
+    chains.filter(c => c.pcs > 0).forEach(c => {
+      const name = c.nom || 'Chaîne';
+      if (!chainMap[name]) chainMap[name] = { pcs: 0, ca: 0, days: 0 };
+      chainMap[name].pcs  += c.pcs;
+      chainMap[name].ca   += c.pcs * c.prix;
+      chainMap[name].days += 1;
+    });
+  });
+
+  const entries = Object.entries(chainMap).sort((a,b) => b[1].ca - a[1].ca);
+  // Masquer le panel s'il n'y a qu'une seule chaîne générique
+  if (entries.length <= 1 && (entries.length === 0 || entries[0][0] === 'Production')) {
+    panel.style.display = 'none'; return;
+  }
+  panel.style.display = '';
+  const totalCA = entries.reduce((s,[,v]) => s + v.ca, 0);
+
+  body.innerHTML = entries.map(([name, v]) => {
+    const pct    = totalCA > 0 ? v.ca / totalCA * 100 : 0;
+    const pxPcs  = v.pcs > 0 ? v.ca / v.pcs : 0;
+    const pcsJ   = v.days > 0 ? Math.round(v.pcs / v.days) : 0;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="font-family:var(--mono);font-size:12px;color:var(--text);width:90px;flex-shrink:0">${name}</span>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--text-faint);margin-bottom:4px">
+          <span>${v.pcs.toLocaleString('fr-FR')} pcs — ${pcsJ.toLocaleString('fr-FR')} pcs/j</span>
+          <span>${pxPcs > 0 ? fmtN(pxPcs) + ' MAD/pcs' : ''}</span>
+        </div>
+        <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;border:1px solid var(--border)">
+          <div style="height:100%;width:${pct.toFixed(1)}%;background:var(--blue);border-radius:3px;transition:width .4s"></div>
+        </div>
+      </div>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--text-muted);width:40px;text-align:right;flex-shrink:0">${Math.round(pct)}%</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--text);width:90px;text-align:right;flex-shrink:0">${fmtN(v.ca)} MAD</span>
+    </div>`;
+  }).join('');
 }
 
 function fmtDate(str) {
@@ -1006,10 +1113,18 @@ function editDay(dateStr) {
   const j = journees[dateStr];
   if (!j) return;
   document.getElementById('date-input').value      = j.date;
-  document.getElementById('facturees').value        = j.facturees;
-  document.getElementById('prix_facon').value       = j.prix_facon;
   document.getElementById('salaires_jour').value    = j.c_mo || 0;
   document.getElementById('var_imprevues').value    = j.var_imp || 0;
+  // Restaurer les chaînes (compatibilité avec anciennes journées sans chains[])
+  const savedChains = j.chains && j.chains.length > 0
+    ? j.chains
+    : [{ pcs: j.facturees || 0, prix: j.prix_facon || 0 }];
+  const c1 = savedChains[0] || {};
+  const c2 = savedChains[1] || {};
+  document.getElementById('c1_pcs').value  = c1.pcs  || 0;
+  document.getElementById('c1_prix').value = c1.prix || 0;
+  document.getElementById('c2_pcs').value  = c2.pcs  || 0;
+  document.getElementById('c2_prix').value = c2.prix || 0;
   // Bandeau édition
   const banner = document.getElementById('edit-banner');
   document.getElementById('edit-banner-text').textContent = 'Modification de la journée du ' + fmtDate(dateStr);
@@ -1023,8 +1138,10 @@ function editDay(dateStr) {
 function cancelEdit() {
   document.getElementById('edit-banner').style.display = 'none';
   document.getElementById('date-input').value   = today.toISOString().split('T')[0];
-  document.getElementById('facturees').value     = 0;
-  document.getElementById('prix_facon').value    = 0;
+  document.getElementById('c1_pcs').value  = 0;
+  document.getElementById('c1_prix').value = 0;
+  document.getElementById('c2_pcs').value  = 0;
+  document.getElementById('c2_prix').value = 0;
   document.getElementById('salaires_jour').value = 0;
   document.getElementById('var_imprevues').value = 0;
   document.querySelector('#page-1 .btn-primary').innerHTML =
