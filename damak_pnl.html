@@ -8,6 +8,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 #toast{display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:10px 22px;border-radius:8px;z-index:9999;pointer-events:none;letter-spacing:.05em;transition:opacity .3s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.18)}
+/* MODALE */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:8000;align-items:center;justify-content:center;padding:1.5rem}
+#modal-overlay.open{display:flex}
+#modal-box{background:#fff;border-radius:14px;padding:1.75rem 1.75rem 1.5rem;max-width:440px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.22);animation:modalIn .18s ease}
+@keyframes modalIn{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+#modal-icon{width:40px;height:40px;border-radius:50%;background:var(--amber-bg);border:1.5px solid var(--amber-border);display:flex;align-items:center;justify-content:center;margin-bottom:1rem}
+#modal-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:.5rem;letter-spacing:-.02em}
+#modal-body{font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:1.25rem}
+#modal-count{display:inline-block;background:var(--amber-bg);border:1px solid var(--amber-border);color:var(--amber);font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:20px;margin-bottom:1rem;font-weight:500}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.modal-btn-cancel{background:var(--surface2);border:1px solid var(--border-strong);color:var(--text-muted);font-size:13px;font-weight:500;padding:8px 18px;border-radius:8px;cursor:pointer;transition:background .15s}
+.modal-btn-cancel:hover{background:var(--border)}
+.modal-btn-confirm{background:var(--amber);border:none;color:#fff;font-size:13px;font-weight:600;padding:8px 18px;border-radius:8px;cursor:pointer;transition:opacity .15s}
+.modal-btn-confirm:hover{opacity:.88}
 </style>
 <style>
 :root {
@@ -336,29 +350,81 @@ select:focus{border-color:var(--blue)}
       <div class="panel-title">Saisie du jour</div>
 
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.875rem;margin-bottom:.75rem">
-        <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--blue);font-weight:500;margin-bottom:.75rem">Chaîne 1</div>
+        <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--blue);font-weight:500;margin-bottom:.6rem">Chaîne 1</div>
+        <!-- Modèle 1 -->
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">Modèle 1</div>
         <div class="field"><div class="field-row">
-          <span class="field-label">Pièces façonnées</span>
-          <div class="field-input-wrap"><input type="number" id="c1_pcs" value="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
+          <span class="field-label">Pièces</span>
+          <div class="field-input-wrap"><input type="number" id="c1_pcs" placeholder="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
         </div></div>
         <div class="field" style="margin-bottom:0"><div class="field-row">
-          <span class="field-label">Prix de façon / pièce</span>
-          <div class="field-input-wrap"><input type="number" id="c1_prix" value="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+          <span class="field-label">Prix / pièce</span>
+          <div class="field-input-wrap"><input type="number" id="c1_prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
         </div></div>
+        <!-- Modèle 2 (optionnel) -->
+        <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border-strong)">
+          <div style="font-size:10px;color:var(--text-faint);margin-bottom:4px">Modèle 2 <em>(optionnel)</em></div>
+          <div class="field"><div class="field-row">
+            <span class="field-label">Pièces</span>
+            <div class="field-input-wrap"><input type="number" id="c1b_pcs" placeholder="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
+          </div></div>
+          <div class="field" style="margin-bottom:0"><div class="field-row">
+            <span class="field-label">Prix / pièce</span>
+            <div class="field-input-wrap"><input type="number" id="c1b_prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+          </div></div>
+        </div>
+        <!-- Modèle 3 (optionnel) -->
+        <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border-strong)">
+          <div style="font-size:10px;color:var(--text-faint);margin-bottom:4px">Modèle 3 <em>(optionnel)</em></div>
+          <div class="field"><div class="field-row">
+            <span class="field-label">Pièces</span>
+            <div class="field-input-wrap"><input type="number" id="c1c_pcs" placeholder="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
+          </div></div>
+          <div class="field" style="margin-bottom:0"><div class="field-row">
+            <span class="field-label">Prix / pièce</span>
+            <div class="field-input-wrap"><input type="number" id="c1c_prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+          </div></div>
+        </div>
         <div style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--blue);margin-top:6px">= <span id="c1_ca">0 MAD</span></div>
       </div>
 
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.875rem;margin-bottom:.75rem">
-        <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);font-weight:500;margin-bottom:.75rem">Chaîne 2 <em style="text-transform:none;letter-spacing:0">(optionnel)</em></div>
+        <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--blue);font-weight:500;margin-bottom:.6rem">Chaîne 2</div>
+        <!-- Modèle 1 -->
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">Modèle 1</div>
         <div class="field"><div class="field-row">
-          <span class="field-label">Pièces façonnées</span>
-          <div class="field-input-wrap"><input type="number" id="c2_pcs" value="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
+          <span class="field-label">Pièces</span>
+          <div class="field-input-wrap"><input type="number" id="c2_pcs" placeholder="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
         </div></div>
         <div class="field" style="margin-bottom:0"><div class="field-row">
-          <span class="field-label">Prix de façon / pièce</span>
-          <div class="field-input-wrap"><input type="number" id="c2_prix" value="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+          <span class="field-label">Prix / pièce</span>
+          <div class="field-input-wrap"><input type="number" id="c2_prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
         </div></div>
-        <div style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-top:6px">= <span id="c2_ca">—</span></div>
+        <!-- Modèle 2 (optionnel) -->
+        <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border-strong)">
+          <div style="font-size:10px;color:var(--text-faint);margin-bottom:4px">Modèle 2 <em>(optionnel)</em></div>
+          <div class="field"><div class="field-row">
+            <span class="field-label">Pièces</span>
+            <div class="field-input-wrap"><input type="number" id="c2b_pcs" placeholder="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
+          </div></div>
+          <div class="field" style="margin-bottom:0"><div class="field-row">
+            <span class="field-label">Prix / pièce</span>
+            <div class="field-input-wrap"><input type="number" id="c2b_prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+          </div></div>
+        </div>
+        <!-- Modèle 3 (optionnel) -->
+        <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border-strong)">
+          <div style="font-size:10px;color:var(--text-faint);margin-bottom:4px">Modèle 3 <em>(optionnel)</em></div>
+          <div class="field"><div class="field-row">
+            <span class="field-label">Pièces</span>
+            <div class="field-input-wrap"><input type="number" id="c2c_pcs" placeholder="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
+          </div></div>
+          <div class="field" style="margin-bottom:0"><div class="field-row">
+            <span class="field-label">Prix / pièce</span>
+            <div class="field-input-wrap"><input type="number" id="c2c_prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+          </div></div>
+        </div>
+        <div style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--blue);margin-top:6px">= <span id="c2_ca">0 MAD</span></div>
       </div>
 
       <div class="chains-total">
@@ -370,19 +436,12 @@ select:focus{border-color:var(--blue)}
         <span class="field-label">Salaires du jour
           <span class="tip">?<span class="tip-box">Montant total des salaires bruts journaliers (calculé depuis la fiche de paie). Les charges patronales (CNSS, AMO…) sont à configurer mensuellement dans les Paramètres.</span></span>
         </span>
-        <div class="field-input-wrap"><input type="number" id="salaires_jour" value="0" min="0" step="100" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
-      </div></div>
-
-      <div class="field"><div class="field-row">
-        <span class="field-label">Dépenses imprévues
-          <span class="tip">?<span class="tip-box">Dépense exceptionnelle non planifiée : réparation urgente, sous-traitance ponctuelle. Laisser à 0 si rien.</span></span>
-        </span>
-        <div class="field-input-wrap"><input type="number" id="var_imprevues" value="0" min="0" step="50" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
+        <div class="field-input-wrap"><input type="number" id="salaires_jour" placeholder="0" min="0" step="100" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
       </div></div>
 
       <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
         <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);margin-bottom:.5rem">
-          Charges fixes du jour <em style="text-transform:none;letter-spacing:0;font-style:italic">(depuis paramètres)</em>
+          Charges d'exploitation / jour <em style="text-transform:none;letter-spacing:0;font-style:italic">(depuis paramètres)</em>
         </div>
         <div style="font-family:var(--mono);font-size:15px;font-weight:500;color:var(--text)" id="fixes-display">— MAD</div>
         <div style="font-size:11px;color:var(--text-faint);margin-top:3px" id="fixes-detail">Configurer dans l'onglet Paramètres</div>
@@ -393,10 +452,9 @@ select:focus{border-color:var(--blue)}
       <div class="panel-title">Décomposition P&L</div>
       <div class="brow"><span class="brow-key">CA façon (pièces × prix)</span><span class="brow-val" id="b-ca">—</span></div>
       <div class="brow indent"><span class="brow-key">— Salaires du jour</span><span class="brow-val neg" id="b-mo">—</span></div>
-      <div class="brow indent"><span class="brow-key">— Dépenses imprévues</span><span class="brow-val neg" id="b-var">—</span></div>
       <div class="brow-sep"></div>
-      <div class="brow"><span class="brow-key">Marge sur coûts variables</span><span class="brow-val" id="b-mcv">—</span></div>
-      <div class="brow indent"><span class="brow-key">— Charges fixes / jour</span><span class="brow-val neg" id="b-fix">—</span></div>
+      <div class="brow"><span class="brow-key">Marge brute</span><span class="brow-val" id="b-mcv">—</span></div>
+      <div class="brow indent"><span class="brow-key">— Charges d'exploitation / jour</span><span class="brow-val neg" id="b-fix">—</span></div>
       <div class="brow-sep"></div>
       <div class="brow-total">
         <span class="brow-total-key">Résultat net</span>
@@ -444,7 +502,7 @@ select:focus{border-color:var(--blue)}
         <span class="param-label">Charges sociales patronales / mois
           <span class="tip">?<span class="tip-box">Estimation mensuelle des charges patronales : CNSS, AMO employeur, IPE, etc. Ce montant est réparti en quote-part journalière et inclus dans les charges fixes du jour.</span></span>
         </span>
-        <div class="field-input-wrap"><input type="number" id="p-charges-sociales" value="0" min="0" step="100" oninput="calcParams()"><span class="field-unit">MAD</span></div>
+        <div class="field-input-wrap"><input type="number" id="p-charges-sociales" placeholder="0" min="0" step="100" oninput="calcParams()"><span class="field-unit">MAD</span></div>
       </div>
     </div>
 
@@ -480,8 +538,8 @@ select:focus{border-color:var(--blue)}
     <div class="param-group">
       <div class="param-group-title">Charges fiscales & assurances</div>
       <div class="param-row">
-        <span class="param-label">Impôts & Patente / mois
-          <span class="tip">?<span class="tip-box">Charge fiscale récurrente (Notion : "Impôts & Patente"). Montant quasi-fixe : 18 151 MAD/mois en 2025. À mettre à jour si le montant change en cours d'année.</span></span>
+        <span class="param-label">Impôts, Patente & Honoraires (divers) / mois
+          <span class="tip">?<span class="tip-box">Charges fiscales et honoraires divers : impôts, patente, honoraires comptable, frais juridiques, etc. Montant quasi-fixe : 18 151 MAD/mois en 2025. À mettre à jour si le montant change.</span></span>
         </span>
         <div class="field-input-wrap"><input type="number" id="p-impots" value="18151" min="0" step="100" oninput="calcParams()"><span class="field-unit">MAD</span></div>
       </div>
@@ -503,12 +561,37 @@ select:focus{border-color:var(--blue)}
 
   <div class="params-total">
     <div>
-      <div class="params-total-label">Total charges fixes — <span id="p-month-label">ce mois</span></div>
+      <div class="params-total-label">Total estimé — <span id="p-month-label">ce mois</span></div>
       <div class="params-total-sub" id="p-total-sub">soit — MAD / jour ouvré</div>
     </div>
     <div style="text-align:right">
       <div class="params-total-val" id="p-total-mensuel">— MAD</div>
     </div>
+  </div>
+
+  <!-- ── CHARGES RÉELLES (post-mois) ─────────────────────────── -->
+  <div id="charges-reelles-panel" style="margin-top:1rem;border-radius:10px;border:1.5px dashed var(--amber-border);background:var(--amber-bg);padding:1rem 1.25rem;transition:border-color .3s,background .3s">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem">
+      <svg id="cr-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="cr-label" style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.13em;color:var(--amber);font-weight:500">Données réelles — à renseigner après clôture</span>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:.875rem;line-height:1.5">
+      Une fois le mois terminé, renseignez les vrais totaux. Ils remplaceront les estimations et les saisies quotidiennes pour tous les calculs du mois.
+    </div>
+    <div class="param-row">
+      <span class="param-label">Charges d'exploitation réelles
+        <span class="tip">?<span class="tip-box">Total réel de toutes les dépenses hors salaires : loyer, énergie, CNSS, impôts, assurances, imprévus, tout compris. Ce montant remplace l'estimation ventilée ci-dessus.</span></span>
+      </span>
+      <div class="field-input-wrap"><input type="number" id="p-charges-reelles" placeholder="0" min="0" step="500" oninput="calcParams()"><span class="field-unit">MAD</span></div>
+    </div>
+    <div id="charges-reelles-perj" style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-top:-4px;margin-bottom:.75rem"></div>
+    <div class="param-row" style="margin-bottom:0">
+      <span class="param-label">Salaires réels du mois
+        <span class="tip">?<span class="tip-box">Total réel des salaires si différent de la somme des saisies quotidiennes (ex : nouvelle recrue saisie en retard par le RH). Laissez vide si les saisies journalières sont correctes.</span></span>
+      </span>
+      <div class="field-input-wrap"><input type="number" id="p-salaires-reels" placeholder="0" min="0" step="100" oninput="calcParams()"><span class="field-unit">MAD</span></div>
+    </div>
+    <div id="salaires-reels-perj" style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-top:6px"></div>
   </div>
 
   <div class="btn-row">
@@ -517,6 +600,12 @@ select:focus{border-color:var(--blue)}
       Enregistrer les paramètres
     </button>
     <button class="btn-secondary" onclick="switchTab(1)">← Retour journée</button>
+  </div>
+  <div id="btn-recalc-wrap" style="display:none;margin-top:.75rem">
+    <button onclick="openRecalcModal()" style="width:100%;background:var(--amber-bg);border:1.5px solid var(--amber-border);color:var(--amber);font-size:13px;font-weight:600;padding:10px 18px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s" onmouseover="this.style.background='#fef3c7'" onmouseout="this.style.background='var(--amber-bg)'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Valider et appliquer les changements aux journées du mois
+    </button>
   </div>
   <div class="footer-note">DAMAK International · Paramètres · v3.0</div>
 </div>
@@ -685,6 +774,7 @@ function getParamsForMonth(month, year) {
 function getFixesJourForDate(dateStr) {
   const d = new Date(dateStr);
   const p = getParamsForMonth(d.getMonth(), d.getFullYear());
+  if (p.charges_reelles > 0) return p.charges_reelles / p.jours;
   const total = p.loyer + p.energie + p.impots + p.assurance + p.tel + (p.charges_sociales || 0);
   return total / p.jours;
 }
@@ -694,7 +784,9 @@ function loadParams() {
   const month = +document.getElementById('p-month').value;
   const year  = +document.getElementById('p-year').value;
   const p = getParamsForMonth(month, year);
-  document.getElementById('p-charges-sociales').value = p.charges_sociales || 0;
+  document.getElementById('p-charges-sociales').value = p.charges_sociales  || '';
+  document.getElementById('p-charges-reelles').value  = p.charges_reelles   || '';
+  document.getElementById('p-salaires-reels').value   = p.salaires_reels    || '';
   document.getElementById('p-jours').value            = p.jours           || 26;
   document.getElementById('p-loyer').value     = p.loyer     || 50000;
   document.getElementById('p-energie').value   = p.energie   || 22000;
@@ -702,6 +794,9 @@ function loadParams() {
   document.getElementById('p-assurance').value = p.assurance || 8850;
   document.getElementById('p-tel').value       = p.tel       || 1300;
   document.getElementById('p-month-label').textContent = MONTHS_FR[month] + ' ' + year;
+  // Afficher le bouton recalcul seulement si des journées existent ce mois
+  const hasJournees = getJourneesForMonth(month, year).length > 0;
+  document.getElementById('btn-recalc-wrap').style.display = hasJournees ? 'block' : 'none';
   calcParams();
 }
 
@@ -713,11 +808,106 @@ function calcParams() {
   const tel              = +document.getElementById('p-tel').value              || 0;
   const charges_sociales = +document.getElementById('p-charges-sociales').value || 0;
   const jours            = +document.getElementById('p-jours').value            || 26;
-  const total            = loyer + energie + impots + assurance + tel + charges_sociales;
-  const parJour   = total / jours;
+  const charges_reelles  = +document.getElementById('p-charges-reelles').value  || 0;
+  const salaires_reels   = +document.getElementById('p-salaires-reels').value   || 0;
+  const total    = loyer + energie + impots + assurance + tel + charges_sociales;
+  const parJour  = total / jours;
   document.getElementById('p-total-mensuel').textContent = fmt(total);
   document.getElementById('p-total-sub').textContent = 'soit ' + fmt(parJour) + ' / jour ouvré';
+  // Charges réelles : affichage du per/jour + style du panel
+  const panelEl   = document.getElementById('charges-reelles-panel');
+  const perJourEl = document.getElementById('charges-reelles-perj');
+  const crLabel   = document.getElementById('cr-label');
+  const crIcon    = document.getElementById('cr-icon');
+  if (charges_reelles > 0) {
+    panelEl.style.borderColor = 'var(--green-border)';
+    panelEl.style.background  = 'var(--green-bg)';
+    crLabel.style.color       = 'var(--green)';
+    crIcon.setAttribute('stroke', 'var(--green)');
+    perJourEl.textContent     = '✓ ' + fmt(charges_reelles / jours) + ' / jour ouvré — utilisé pour les calculs';
+    perJourEl.style.color     = 'var(--green)';
+  } else {
+    panelEl.style.borderColor = 'var(--amber-border)';
+    panelEl.style.background  = 'var(--amber-bg)';
+    crLabel.style.color       = 'var(--amber)';
+    crIcon.setAttribute('stroke', 'var(--amber)');
+    perJourEl.textContent     = '';
+  }
+  // Salaires réels per/jour
+  const salPerJourEl = document.getElementById('salaires-reels-perj');
+  if (salaires_reels > 0) {
+    salPerJourEl.textContent = '✓ ' + fmt(salaires_reels / jours) + ' / jour ouvré — remplace les saisies quotidiennes';
+    salPerJourEl.style.color = 'var(--green)';
+  } else {
+    salPerJourEl.textContent = '';
+  }
   calcJournee();
+}
+
+// ── RECALCUL MOIS ─────────────────────────────────────────────
+function getJourneesForMonth(month, year) {
+  const prefix = getMonthKey(month, year); // e.g. "2025-3"
+  return Object.keys(journees).filter(dateStr => {
+    const d = new Date(dateStr);
+    return d.getMonth() === month && d.getFullYear() === year;
+  });
+}
+
+function openRecalcModal() {
+  const month = +document.getElementById('p-month').value;
+  const year  = +document.getElementById('p-year').value;
+  const dates = getJourneesForMonth(month, year);
+  const n     = dates.length;
+  const mLabel = MONTHS_FR[month] + ' ' + year;
+  const p     = getParamsForMonth(month, year);
+  const usesReelles = p.charges_reelles > 0;
+
+  document.getElementById('modal-count').textContent = n + ' journée' + (n > 1 ? 's' : '') + ' seront recalculées';
+  const usesReellesSal = p.salaires_reels > 0;
+  document.getElementById('modal-body').innerHTML =
+    'Vous êtes sur le point d\'appliquer les nouveaux paramètres de <strong>' + mLabel + '</strong> à toutes les journées déjà enregistrées ce mois.' +
+    '<br><br>Ce qui sera recalculé : charges d\'exploitation / jour → résultat net.' +
+    (usesReelles
+      ? '<br><br>✓ <strong>Charges d\'exploitation réelles</strong> : ' + fmt(p.charges_reelles) + ' ÷ ' + p.jours + 'j'
+      : '<br><br>⚠ Charges d\'exploitation : estimation ventilée (aucune donnée réelle saisie)') +
+    (usesReellesSal
+      ? '<br>✓ <strong>Salaires réels</strong> : ' + fmt(p.salaires_reels) + ' ÷ ' + p.jours + 'j (redistribué uniformément)'
+      : '<br>⚠ Salaires : saisies journalières conservées') +
+    '<br><br><em>Le CA de chaque journée ne sera pas modifié.</em>';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeRecalcModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+async function confirmRecalcMonth() {
+  closeRecalcModal();
+  const month = +document.getElementById('p-month').value;
+  const year  = +document.getElementById('p-year').value;
+  const dates = getJourneesForMonth(month, year);
+  const p     = getParamsForMonth(month, year);
+
+  dates.forEach(dateStr => {
+    const j = journees[dateStr];
+    if (!j) return;
+    const fixes_jour = p.charges_reelles > 0
+      ? p.charges_reelles / p.jours
+      : (p.loyer + p.energie + p.impots + p.assurance + p.tel + (p.charges_sociales || 0)) / p.jours;
+    const c_mo = p.salaires_reels > 0 ? p.salaires_reels / p.jours : (j.c_mo || 0);
+    const mcv  = j.ca - c_mo;
+    const net  = mcv - fixes_jour;
+    journees[dateStr] = { ...j, fixes_jour, c_mo, mcv, net };
+  });
+
+  try {
+    localStorage.setItem('damak_journees', JSON.stringify(journees));
+    await sbSave('journees', journees);
+    renderDashboard();
+    showToast('✓ ' + dates.length + ' journée' + (dates.length > 1 ? 's' : '') + ' recalculée' + (dates.length > 1 ? 's' : '') + ' avec les nouveaux paramètres');
+  } catch(e) {
+    showToast('Erreur lors de la sauvegarde', false);
+  }
 }
 
 function saveParams(btn) {
@@ -726,6 +916,8 @@ function saveParams(btn) {
   const key   = getMonthKey(month, year);
   paramsStore[key] = {
     charges_sociales:  +document.getElementById('p-charges-sociales').value  || 0,
+    charges_reelles:   +document.getElementById('p-charges-reelles').value   || 0,
+    salaires_reels:    +document.getElementById('p-salaires-reels').value    || 0,
     jours:             +document.getElementById('p-jours').value             || 26,
     loyer:             +document.getElementById('p-loyer').value             || 0,
     energie:           +document.getElementById('p-energie').value           || 0,
@@ -744,14 +936,27 @@ function saveParams(btn) {
 
 // ── CHAÎNES ───────────────────────────────────────────────────
 function getChainsData() {
-  const c1p = +document.getElementById('c1_pcs').value  || 0;
-  const c1x = +document.getElementById('c1_prix').value || 0;
-  const c2p = +document.getElementById('c2_pcs').value  || 0;
-  const c2x = +document.getElementById('c2_prix').value || 0;
-  return [
-    { nom: 'Chaîne 1', pcs: c1p, prix: c1x },
-    { nom: 'Chaîne 2', pcs: c2p, prix: c2x }
-  ].filter(c => c.pcs > 0);
+  const rv = id => +document.getElementById(id).value || 0;
+  const raw = [
+    { nom: 'Chaîne 1', models: [
+        { pcs: rv('c1_pcs'),  prix: rv('c1_prix')  },
+        { pcs: rv('c1b_pcs'), prix: rv('c1b_prix') },
+        { pcs: rv('c1c_pcs'), prix: rv('c1c_prix') }
+      ]
+    },
+    { nom: 'Chaîne 2', models: [
+        { pcs: rv('c2_pcs'),  prix: rv('c2_prix')  },
+        { pcs: rv('c2b_pcs'), prix: rv('c2b_prix') },
+        { pcs: rv('c2c_pcs'), prix: rv('c2c_prix') }
+      ]
+    }
+  ];
+  return raw.map(c => {
+    const activeMods = c.models.filter(m => m.pcs > 0);
+    const pcs = activeMods.reduce((s, m) => s + m.pcs, 0);
+    const ca  = activeMods.reduce((s, m) => s + m.pcs * m.prix, 0);
+    return { nom: c.nom, pcs, ca, models: activeMods };
+  }).filter(c => c.pcs > 0);
 }
 
 // ── JOURNÉE ───────────────────────────────────────────────────
@@ -763,22 +968,20 @@ function calcJournee() {
   const p          = getParamsForMonth(d.getMonth(), d.getFullYear());
   const fixes_jour = getFixesJourForDate(dateStr);
 
-  const c1p = +document.getElementById('c1_pcs').value  || 0;
-  const c1x = +document.getElementById('c1_prix').value || 0;
-  const c2p = +document.getElementById('c2_pcs').value  || 0;
-  const c2x = +document.getElementById('c2_prix').value || 0;
-  const c1_ca = c1p * c1x;
-  const c2_ca = c2p * c2x;
-  const ca        = c1_ca + c2_ca;
-  const facturees = c1p + c2p;
-  document.getElementById('c1_ca').textContent = c1_ca > 0 ? fmt(c1_ca) : '0 MAD';
-  document.getElementById('c2_ca').textContent = c2_ca > 0 ? fmt(c2_ca) : '—';
+  const chainsAll  = getChainsData();
+  const c1chain    = chainsAll.find(c => c.nom === 'Chaîne 1');
+  const c2chain    = chainsAll.find(c => c.nom === 'Chaîne 2');
+  const c1_ca_val  = c1chain?.ca  || 0;
+  const c2_ca_val  = c2chain?.ca  || 0;
+  const ca         = c1_ca_val + c2_ca_val;
+  const facturees  = (c1chain?.pcs || 0) + (c2chain?.pcs || 0);
+  document.getElementById('c1_ca').textContent = c1_ca_val > 0 ? fmt(c1_ca_val) : '0 MAD';
+  document.getElementById('c2_ca').textContent = c2_ca_val > 0 ? fmt(c2_ca_val) : '—';
   document.getElementById('chains-total-pcs').textContent = facturees.toLocaleString('fr-FR') + ' pcs';
   document.getElementById('chains-total-ca').textContent  = fmt(ca);
 
-  const var_imp    = +document.getElementById('var_imprevues').value || 0;
   const c_mo       = +document.getElementById('salaires_jour').value || 0;
-  const mcv  = ca - c_mo - var_imp;
+  const mcv  = ca - c_mo;
   const net  = mcv - fixes_jour;
   const mmv  = ca > 0 ? mcv/ca*100 : 0;
   const couv = fixes_jour > 0 ? mcv/fixes_jour*100 : 100;
@@ -793,20 +996,22 @@ function calcJournee() {
   } else {
     fixesDisplayEl.textContent = fmt(fixes_jour);
     fixesDisplayEl.style.color = '';
-    const totalMensuel = p.loyer + p.energie + p.impots + p.assurance + p.tel + (p.charges_sociales || 0);
-    let fixesDetail = fmt(totalMensuel) + ' / mois ÷ ' + p.jours + ' j';
-    if (p.charges_sociales > 0) fixesDetail += ' (dont ch. soc. ' + fmt(p.charges_sociales/p.jours) + '/j)';
-    fixesDetailEl.textContent = fixesDetail;
-    fixesDetailEl.style.color = '';
+    if (p.charges_reelles > 0) {
+      fixesDetailEl.textContent = '✓ Réel · ' + fmt(p.charges_reelles) + '/mois ÷ ' + p.jours + 'j';
+      fixesDetailEl.style.color = 'var(--green)';
+    } else {
+      const totalMensuel = p.loyer + p.energie + p.impots + p.assurance + p.tel + (p.charges_sociales || 0);
+      fixesDetailEl.textContent = '⚠ Estimation · ' + fmt(totalMensuel) + '/mois ÷ ' + p.jours + 'j';
+      fixesDetailEl.style.color = 'var(--amber)';
+    }
   }
 
   document.getElementById('k-ca').textContent      = fmtN(ca);
-  document.getElementById('k-charges').textContent = fmtN(c_mo + var_imp + fixes_jour);
+  document.getElementById('k-charges').textContent = fmtN(c_mo + fixes_jour);
   document.getElementById('k-mmv').textContent     = mmv.toFixed(1) + '%';
 
   document.getElementById('b-ca').textContent  = fmt(ca);
   document.getElementById('b-mo').textContent  = '− ' + fmt(c_mo);
-  document.getElementById('b-var').textContent = '− ' + fmt(var_imp);
   document.getElementById('b-mcv').textContent = fmt(mcv);
   document.getElementById('b-fix').textContent = '− ' + fmt(fixes_jour);
   const netEl = document.getElementById('b-net');
@@ -826,21 +1031,21 @@ function calcJournee() {
     document.getElementById('v-amount').textContent = '+' + fmt(net);
     icon.innerHTML = '<polyline points="20 6 9 17 4 12"/>';
     document.getElementById('v-d1').textContent = 'Marge nette : ' + (ca>0?(net/ca*100).toFixed(1):0) + '%';
-    document.getElementById('v-d2').textContent = 'Couverture fixes : ' + Math.round(couv) + '%';
+    document.getElementById('v-d2').textContent = 'Couverture charges : ' + Math.round(couv) + '%';
   } else if (net < -200) {
     verd.className = 'verdict lose';
     document.getElementById('v-label').textContent  = 'Journée perdante';
     document.getElementById('v-amount').textContent = fmt(net);
     icon.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
     document.getElementById('v-d1').textContent = 'Manque ' + fmt(-net) + ' de CA';
-    document.getElementById('v-d2').textContent = 'Couverture fixes : ' + Math.round(couv) + '%';
+    document.getElementById('v-d2').textContent = 'Couverture charges : ' + Math.round(couv) + '%';
   } else {
     verd.className = 'verdict flat';
     document.getElementById('v-label').textContent  = 'Équilibre';
     document.getElementById('v-amount').textContent = fmt(net);
     icon.innerHTML = '<line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/>';
     document.getElementById('v-d1').textContent = 'À la limite du seuil';
-    document.getElementById('v-d2').textContent = 'Couverture fixes : ' + Math.round(couv) + '%';
+    document.getElementById('v-d2').textContent = 'Couverture charges : ' + Math.round(couv) + '%';
   }
 }
 
@@ -853,17 +1058,16 @@ function saveDay(btn) {
     return;
   }
   const fixes_jour = getFixesJourForDate(dateStr);
-  const chains     = getChainsData().filter(c => c.pcs > 0);
+  const chains     = getChainsData(); // already filtered (pcs > 0)
   const facturees  = chains.reduce((s,c) => s + c.pcs, 0);
-  const ca         = chains.reduce((s,c) => s + c.pcs * c.prix, 0);
+  const ca         = chains.reduce((s,c) => s + c.ca,  0);
   const prix_facon = facturees > 0 ? ca / facturees : 0;
-  const var_imp    = +document.getElementById('var_imprevues').value || 0;
   const c_mo       = +document.getElementById('salaires_jour').value || 0;
-  const mcv  = ca - c_mo - var_imp;
+  const mcv  = ca - c_mo;
   const net  = mcv - fixes_jour;
 
   const doSave = () => {
-    journees[dateStr] = { date:dateStr, chains, facturees, prix_facon, var_imp, ca, c_mo, mcv, net, fixes_jour };
+    journees[dateStr] = { date:dateStr, chains, facturees, prix_facon, ca, c_mo, mcv, net, fixes_jour };
     try {
       localStorage.setItem('damak_journees', JSON.stringify(journees));
       sbSave('journees', journees);
@@ -1113,18 +1317,30 @@ function editDay(dateStr) {
   const j = journees[dateStr];
   if (!j) return;
   document.getElementById('date-input').value      = j.date;
-  document.getElementById('salaires_jour').value    = j.c_mo || 0;
-  document.getElementById('var_imprevues').value    = j.var_imp || 0;
+  document.getElementById('salaires_jour').value    = j.c_mo    || '';
   // Restaurer les chaînes (compatibilité avec anciennes journées sans chains[])
   const savedChains = j.chains && j.chains.length > 0
     ? j.chains
-    : [{ pcs: j.facturees || 0, prix: j.prix_facon || 0 }];
-  const c1 = savedChains[0] || {};
-  const c2 = savedChains[1] || {};
-  document.getElementById('c1_pcs').value  = c1.pcs  || 0;
-  document.getElementById('c1_prix').value = c1.prix || 0;
-  document.getElementById('c2_pcs').value  = c2.pcs  || 0;
-  document.getElementById('c2_prix').value = c2.prix || 0;
+    : [{ nom: 'Chaîne 1', pcs: j.facturees || 0, prix: j.prix_facon || 0 }];
+  // Retrouver chaque chaîne par nom (ou par index pour vieux format)
+  const c1saved = savedChains.find(c => c.nom === 'Chaîne 1') || savedChains[0] || {};
+  const c2saved = savedChains.find(c => c.nom === 'Chaîne 2') || savedChains[1] || {};
+  // Extraire les modèles : nouveau format (models[]) ou ancien (pcs/prix)
+  const getModels = c => {
+    if (!c || !c.nom) return [];
+    if (c.models && c.models.length > 0) return c.models;
+    if (c.pcs > 0) return [{ pcs: c.pcs, prix: c.prix || 0 }];
+    return [];
+  };
+  const c1m = getModels(c1saved);
+  const c2m = getModels(c2saved);
+  const setV = (id, val) => document.getElementById(id).value = val || '';
+  setV('c1_pcs',  c1m[0]?.pcs);  setV('c1_prix',  c1m[0]?.prix);
+  setV('c1b_pcs', c1m[1]?.pcs);  setV('c1b_prix', c1m[1]?.prix);
+  setV('c1c_pcs', c1m[2]?.pcs);  setV('c1c_prix', c1m[2]?.prix);
+  setV('c2_pcs',  c2m[0]?.pcs);  setV('c2_prix',  c2m[0]?.prix);
+  setV('c2b_pcs', c2m[1]?.pcs);  setV('c2b_prix', c2m[1]?.prix);
+  setV('c2c_pcs', c2m[2]?.pcs);  setV('c2c_prix', c2m[2]?.prix);
   // Bandeau édition
   const banner = document.getElementById('edit-banner');
   document.getElementById('edit-banner-text').textContent = 'Modification de la journée du ' + fmtDate(dateStr);
@@ -1138,12 +1354,9 @@ function editDay(dateStr) {
 function cancelEdit() {
   document.getElementById('edit-banner').style.display = 'none';
   document.getElementById('date-input').value   = today.toISOString().split('T')[0];
-  document.getElementById('c1_pcs').value  = 0;
-  document.getElementById('c1_prix').value = 0;
-  document.getElementById('c2_pcs').value  = 0;
-  document.getElementById('c2_prix').value = 0;
-  document.getElementById('salaires_jour').value = 0;
-  document.getElementById('var_imprevues').value = 0;
+  ['c1_pcs','c1_prix','c1b_pcs','c1b_prix','c1c_pcs','c1c_prix',
+   'c2_pcs','c2_prix','c2b_pcs','c2b_prix','c2c_pcs','c2c_prix',
+   'salaires_jour'].forEach(id => document.getElementById(id).value = '');
   document.querySelector('#page-1 .btn-primary').innerHTML =
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enregistrer et voir dans le dashboard';
   calcJournee();
@@ -1256,6 +1469,25 @@ init();
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button id="confirm-cancel" style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border-strong);border-radius:7px;padding:7px 16px;font-family:var(--mono);font-size:12px;cursor:pointer">Annuler</button>
       <button id="confirm-ok" style="background:var(--red);color:#fff;border:none;border-radius:7px;padding:7px 16px;font-family:var(--mono);font-size:12px;cursor:pointer;font-weight:500">Remplacer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODALE RECALCUL MOIS ═══ -->
+<div id="modal-overlay" onclick="if(event.target===this)closeRecalcModal()">
+  <div id="modal-box">
+    <div id="modal-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <div id="modal-title">Modification d'un mois déjà commencé</div>
+    <div id="modal-count"></div>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="closeRecalcModal()">Annuler</button>
+      <button class="modal-btn-confirm" onclick="confirmRecalcMonth()">Confirmer le recalcul</button>
     </div>
   </div>
 </div>
