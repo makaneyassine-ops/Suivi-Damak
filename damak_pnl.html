@@ -1236,6 +1236,12 @@ function saveDay(btn) {
   const mcv  = ca - c_mo;
   const net  = mcv - fixes_jour;
 
+  // ── Blocage si aucune production saisie
+  if (facturees === 0) {
+    showToast('⚠ Aucune production saisie — renseignez au moins une chaîne avant de confirmer.', false);
+    return;
+  }
+
   const doSave = () => {
     journees[dateStr] = { date:dateStr, chains, facturees, prix_facon, ca, c_mo, mcv, net, fixes_jour };
     try {
@@ -1243,18 +1249,37 @@ function saveDay(btn) {
       sbSave('journees', journees);
       showToast('✓ Journée enregistrée');
       renderDashboard();
-      cancelEdit(); // remet le formulaire à zéro pour la prochaine saisie
+      cancelEdit();
       setTimeout(() => switchTab(0), 900);
     } catch(e) {
       showToast('Erreur : impossible de sauvegarder (stockage plein ?)', false);
     }
   };
 
-  if (journees[dateStr]) {
-    showConfirm(`Une journée existe déjà pour le ${fmtDate(dateStr)}. Remplacer ?`, doSave);
-  } else {
-    doSave();
+  // ── Construction de la file d'avertissements
+  const warnings = [];
+  const c1HasData = chains.some(c => c.nom === 'Chaîne 1');
+  const c2HasData = chains.some(c => c.nom === 'Chaîne 2');
+  if (!c1HasData) warnings.push('La Chaîne 1 n\'a aucune production saisie.\nEst-ce qu\'elle n\'a vraiment pas travaillé aujourd\'hui ?');
+  if (!c2HasData) warnings.push('La Chaîne 2 n\'a aucune production saisie.\nEst-ce qu\'elle n\'a vraiment pas travaillé aujourd\'hui ?');
+  if (c_mo === 0)  warnings.push('Aucun salaire renseigné pour cette journée.\nÊtes-vous sûr qu\'il n\'y a eu aucun salaire à payer ce jour-là ?');
+
+  // Chaîner les avertissements, puis vérifier si remplacement, puis sauvegarder
+  function runWarnings(list, onAllOk) {
+    if (list.length === 0) { onAllOk(); return; }
+    const [first, ...rest] = list;
+    showConfirm(first, () => runWarnings(rest, onAllOk));
   }
+
+  const proceedAfterWarnings = () => {
+    if (journees[dateStr]) {
+      showConfirm(`Une journée existe déjà pour le ${fmtDate(dateStr)}. Remplacer ?`, doSave);
+    } else {
+      doSave();
+    }
+  };
+
+  runWarnings(warnings, proceedAfterWarnings);
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────
