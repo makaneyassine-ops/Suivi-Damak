@@ -118,10 +118,10 @@ select:focus{border-color:var(--blue)}
 
 /* DASHBOARD STAT CARDS */
 .stat-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1.25rem}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem}
-.stat-card-label{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);margin-bottom:8px}
-.stat-card-value{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--text);margin-bottom:3px}
-.stat-card-sub{font-size:11px;color:var(--text-muted)}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem}
+.stat-card-label{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-card-value{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--text);margin-bottom:5px;white-space:nowrap}
+.stat-card-sub{font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* WIN/LOSE RATIO */
 .ratio-bar-wrap{margin-top:8px}
@@ -209,6 +209,11 @@ select:focus{border-color:var(--blue)}
 .chains-total{display:flex;justify-content:space-between;align-items:center;padding:8px 0 2px;border-top:1px dashed var(--border-strong);margin-top:6px}
 .chains-add{background:none;border:1px dashed var(--border-strong);border-radius:7px;width:100%;padding:7px;font-family:var(--mono);font-size:11px;color:var(--text-muted);cursor:pointer;margin-top:6px;transition:all .15s;letter-spacing:.04em}
 .chains-add:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+.btn-add-model{background:none;border:1px dashed var(--border-strong);border-radius:6px;width:100%;padding:5px 0;font-family:var(--mono);font-size:11px;color:var(--text-muted);cursor:pointer;margin-top:6px;transition:all .15s;letter-spacing:.04em}
+.btn-add-model:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg)}
+.model-row+.model-row{margin-top:6px;padding-top:6px;border-top:1px dashed var(--border-strong)}
+.model-remove-btn{background:none;border:none;color:var(--text-faint);font-size:18px;line-height:1;cursor:pointer;padding:0 2px;flex-shrink:0;transition:color .15s;align-self:center}
+.model-remove-btn:hover{color:var(--red)}
 @media(max-width:620px){.chain-row{grid-template-columns:1fr 58px auto 58px auto 76px 24px;gap:4px}}
 </style>
 </head>
@@ -268,22 +273,60 @@ select:focus{border-color:var(--blue)}
     </div>
   </div>
 
+  <div class="stat-cards" style="margin-top:-6px">
+    <div class="stat-card">
+      <div class="stat-card-label">CA moyen / jour</div>
+      <div class="stat-card-value" id="db-avg-ca">—</div>
+      <div class="stat-card-sub">MAD · moyenne journalière</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Net moyen / jour</div>
+      <div class="stat-card-value" id="db-avg-net">—</div>
+      <div class="stat-card-sub">MAD · moyenne journalière</div>
+    </div>
+    <div class="stat-card" id="db-top-pcs-card" style="display:none">
+      <div style="font-size:26px;line-height:1;margin-bottom:6px">🏆</div>
+      <div class="stat-card-label">Chaîne + productive</div>
+      <div class="stat-card-value" id="db-top-pcs-name" style="font-size:18px;font-family:var(--sans);font-weight:600">—</div>
+      <div class="stat-card-sub" id="db-top-pcs-sub">pcs ce mois</div>
+    </div>
+    <div class="stat-card" id="db-top-ca-card" style="display:none">
+      <div style="font-size:26px;line-height:1;margin-bottom:6px">💰</div>
+      <div class="stat-card-label">Chaîne + rentable</div>
+      <div class="stat-card-value" id="db-top-ca-name" style="font-size:18px;font-family:var(--sans);font-weight:600">—</div>
+      <div class="stat-card-sub" id="db-top-ca-sub">MAD ce mois</div>
+    </div>
+  </div>
+
   <div class="grid2" style="margin-bottom:12px">
     <div class="panel">
       <div class="panel-title">Jours gagnants / perdants</div>
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
-        <span style="font-family:var(--mono);font-size:22px;font-weight:500;color:var(--green)" id="db-wins">—</span>
-        <span style="font-size:12px;color:var(--text-muted)" id="db-ratio-label">— jours enregistrés</span>
-        <span style="font-family:var(--mono);font-size:22px;font-weight:500;color:var(--red)" id="db-losses">—</span>
-      </div>
-      <div class="ratio-bar-wrap">
-        <div class="ratio-bar">
-          <div class="ratio-win" id="db-ratio-win" style="width:50%"></div>
-          <div class="ratio-lose" id="db-ratio-lose" style="width:50%"></div>
+      <div style="display:flex;align-items:center;gap:20px">
+        <div style="position:relative;flex-shrink:0;width:130px;height:130px">
+          <canvas id="db-wins-donut"></canvas>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+            <div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text);line-height:1" id="db-win-pct">—</div>
+            <div style="font-size:9px;font-family:var(--mono);color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;margin-top:2px">réussite</div>
+          </div>
         </div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--text-faint);margin-top:5px">
-        <span>Gagnants</span><span>Perdants</span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></span>
+            <span style="font-size:12px;color:var(--text-muted);flex:1">Gagnants</span>
+            <span style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--green)" id="db-wins">—</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0"></span>
+            <span style="font-size:12px;color:var(--text-muted);flex:1">Équilibre</span>
+            <span style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--amber)" id="db-neutral">—</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0"></span>
+            <span style="font-size:12px;color:var(--text-muted);flex:1">Perdants</span>
+            <span style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--red)" id="db-losses">—</span>
+          </div>
+          <div style="font-size:10px;font-family:var(--mono);color:var(--text-faint);margin-top:2px" id="db-ratio-label">— jours enregistrés</div>
+        </div>
       </div>
     </div>
     <div class="panel">
@@ -295,8 +338,26 @@ select:focus{border-color:var(--blue)}
   </div>
 
   <div class="panel" id="db-chains-panel" style="display:none;margin-bottom:12px">
-    <div class="panel-title">Répartition par chaîne</div>
+    <div class="panel-title">Production par chaîne</div>
     <div id="db-chains-body"></div>
+    <!-- Camemberts répartition -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;align-items:center">
+      <div>
+        <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--text-faint);font-weight:500;text-align:center;margin-bottom:8px">Répartition pièces</div>
+        <div style="position:relative;max-height:180px;display:flex;justify-content:center">
+          <canvas id="db-chains-pie-pcs"></canvas>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--text-faint);font-weight:500;text-align:center;margin-bottom:8px">Répartition CA</div>
+        <div style="position:relative;max-height:180px;display:flex;justify-content:center">
+          <canvas id="db-chains-pie-ca"></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- Courbe journalière par chaîne -->
+    <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--text-faint);font-weight:500;margin-top:20px;margin-bottom:8px">Production journalière par chaîne (pcs)</div>
+    <canvas id="db-chains-chart" style="max-height:180px"></canvas>
   </div>
 
   <div class="panel">
@@ -340,7 +401,8 @@ select:focus{border-color:var(--blue)}
   </div>
 
   <div class="kpi-row">
-    <div class="kpi"><div class="kpi-label">CA façon</div><div class="kpi-value" id="k-ca">0</div><div class="kpi-sub">MAD</div></div>
+    <div class="kpi"><div class="kpi-label">CA façon</div><div class="kpi-value" id="k-ca">0</div><div class="kpi-sub" id="k-ca-sub">MAD</div></div>
+    <div class="kpi"><div class="kpi-label">Production</div><div class="kpi-value" id="k-pcs">0</div><div class="kpi-sub" id="k-pcs-sub">pcs ce mois</div></div>
     <div class="kpi"><div class="kpi-label">Charges totales</div><div class="kpi-value" id="k-charges">0</div><div class="kpi-sub">MAD</div></div>
     <div class="kpi"><div class="kpi-label">Marge après MO</div><div class="kpi-value" id="k-mmv">0%</div><div class="kpi-sub">avant charges fixes</div></div>
   </div>
@@ -351,80 +413,22 @@ select:focus{border-color:var(--blue)}
 
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.875rem;margin-bottom:.75rem">
         <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--blue);font-weight:500;margin-bottom:.6rem">Chaîne 1</div>
-        <!-- Modèle 1 -->
-        <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">Modèle 1</div>
-        <div class="field"><div class="field-row">
-          <span class="field-label">Pièces</span>
-          <div class="field-input-wrap"><input type="number" id="c1_pcs" placeholder="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
-        </div></div>
-        <div class="field" style="margin-bottom:0"><div class="field-row">
-          <span class="field-label">Prix / pièce</span>
-          <div class="field-input-wrap"><input type="number" id="c1_prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
-        </div></div>
-        <!-- Modèle 2 (optionnel) -->
-        <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border-strong)">
-          <div style="font-size:10px;color:var(--text-faint);margin-bottom:4px">Modèle 2 <em>(optionnel)</em></div>
-          <div class="field"><div class="field-row">
-            <span class="field-label">Pièces</span>
-            <div class="field-input-wrap"><input type="number" id="c1b_pcs" placeholder="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
-          </div></div>
-          <div class="field" style="margin-bottom:0"><div class="field-row">
-            <span class="field-label">Prix / pièce</span>
-            <div class="field-input-wrap"><input type="number" id="c1b_prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
-          </div></div>
+        <div id="c1-models"></div>
+        <button class="btn-add-model" onclick="addModel('c1')">+ Ajouter modèle</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;color:var(--blue);margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">
+          <span id="c1_total_pcs" style="color:var(--text-muted)">0 pcs</span>
+          <span>= <span id="c1_ca">0 MAD</span></span>
         </div>
-        <!-- Modèle 3 (optionnel) -->
-        <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border-strong)">
-          <div style="font-size:10px;color:var(--text-faint);margin-bottom:4px">Modèle 3 <em>(optionnel)</em></div>
-          <div class="field"><div class="field-row">
-            <span class="field-label">Pièces</span>
-            <div class="field-input-wrap"><input type="number" id="c1c_pcs" placeholder="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
-          </div></div>
-          <div class="field" style="margin-bottom:0"><div class="field-row">
-            <span class="field-label">Prix / pièce</span>
-            <div class="field-input-wrap"><input type="number" id="c1c_prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
-          </div></div>
-        </div>
-        <div style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--blue);margin-top:6px">= <span id="c1_ca">0 MAD</span></div>
       </div>
 
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.875rem;margin-bottom:.75rem">
         <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--blue);font-weight:500;margin-bottom:.6rem">Chaîne 2</div>
-        <!-- Modèle 1 -->
-        <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">Modèle 1</div>
-        <div class="field"><div class="field-row">
-          <span class="field-label">Pièces</span>
-          <div class="field-input-wrap"><input type="number" id="c2_pcs" placeholder="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
-        </div></div>
-        <div class="field" style="margin-bottom:0"><div class="field-row">
-          <span class="field-label">Prix / pièce</span>
-          <div class="field-input-wrap"><input type="number" id="c2_prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
-        </div></div>
-        <!-- Modèle 2 (optionnel) -->
-        <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border-strong)">
-          <div style="font-size:10px;color:var(--text-faint);margin-bottom:4px">Modèle 2 <em>(optionnel)</em></div>
-          <div class="field"><div class="field-row">
-            <span class="field-label">Pièces</span>
-            <div class="field-input-wrap"><input type="number" id="c2b_pcs" placeholder="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
-          </div></div>
-          <div class="field" style="margin-bottom:0"><div class="field-row">
-            <span class="field-label">Prix / pièce</span>
-            <div class="field-input-wrap"><input type="number" id="c2b_prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
-          </div></div>
+        <div id="c2-models"></div>
+        <button class="btn-add-model" onclick="addModel('c2')">+ Ajouter modèle</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;color:var(--blue);margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">
+          <span id="c2_total_pcs" style="color:var(--text-muted)">0 pcs</span>
+          <span>= <span id="c2_ca">0 MAD</span></span>
         </div>
-        <!-- Modèle 3 (optionnel) -->
-        <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border-strong)">
-          <div style="font-size:10px;color:var(--text-faint);margin-bottom:4px">Modèle 3 <em>(optionnel)</em></div>
-          <div class="field"><div class="field-row">
-            <span class="field-label">Pièces</span>
-            <div class="field-input-wrap"><input type="number" id="c2c_pcs" placeholder="0" min="0" oninput="calcJournee()"><span class="field-unit">pcs</span></div>
-          </div></div>
-          <div class="field" style="margin-bottom:0"><div class="field-row">
-            <span class="field-label">Prix / pièce</span>
-            <div class="field-input-wrap"><input type="number" id="c2c_prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"><span class="field-unit">MAD</span></div>
-          </div></div>
-        </div>
-        <div style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--blue);margin-top:6px">= <span id="c2_ca">0 MAD</span></div>
       </div>
 
       <div class="chains-total">
@@ -485,6 +489,11 @@ select:focus{border-color:var(--blue)}
 
   <div class="params-intro">
     Configurez ici les charges fixes <strong>mois par mois</strong>. Sélectionnez le mois à paramétrer, saisissez les valeurs, puis enregistrez. L'outil utilisera automatiquement le bon jeu de paramètres pour chaque journée enregistrée.
+  </div>
+
+  <div id="params-history-panel" style="margin-bottom:1.25rem;display:none">
+    <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.13em;color:var(--text-faint);font-weight:500;margin-bottom:.6rem">Mois déjà configurés</div>
+    <div id="params-history-list"></div>
   </div>
 
   <div class="month-selector">
@@ -675,9 +684,15 @@ select:focus{border-color:var(--blue)}
 const SB_URL = 'https://uimakfwjndcrgtlalgty.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpbWFrZndqbmRjcmd0bGFsZ3R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5OTI0MDIsImV4cCI6MjA5MDU2ODQwMn0.DWSrLvPxU2RhT32RDmaGvkOL9czREzgHgdRY9CpnT34';
 
+function sbFetchWithTimeout(url, opts, ms = 8000) {
+  const ctrl = new AbortController();
+  const tid   = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(tid));
+}
+
 async function sbLoad(key) {
   try {
-    const r = await fetch(`${SB_URL}/rest/v1/app_data?key=eq.${key}&select=value`, {
+    const r = await sbFetchWithTimeout(`${SB_URL}/rest/v1/app_data?key=eq.${key}&select=value`, {
       headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
     });
     const d = await r.json();
@@ -687,7 +702,7 @@ async function sbLoad(key) {
 
 async function sbSave(key, value) {
   try {
-    await fetch(`${SB_URL}/rest/v1/app_data`, {
+    await sbFetchWithTimeout(`${SB_URL}/rest/v1/app_data`, {
       method: 'POST',
       headers: {
         apikey: SB_KEY,
@@ -710,9 +725,12 @@ const today = new Date();
 let journees = {};
 let paramsStore = {};
 let chartInstance = null;
+let winDonutInstance = null;
 
 // ── INIT ─────────────────────────────────────────────────────
 async function init() {
+  resetChainModels('c1', []);
+  resetChainModels('c2', []);
   document.getElementById('loading-overlay').style.display = 'flex';
   document.getElementById('date-input').value = today.toISOString().split('T')[0];
 
@@ -780,6 +798,117 @@ function getFixesJourForDate(dateStr) {
 }
 
 // ── PARAMÈTRES ────────────────────────────────────────────────
+function renderParamsHistory() {
+  const list  = document.getElementById('params-history-list');
+  const panel = document.getElementById('params-history-panel');
+  if (!list || !panel) return;
+  const keys = Object.keys(paramsStore).sort().reverse();
+  if (keys.length === 0) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  const curMonth = +document.getElementById('p-month').value;
+  const curYear  = +document.getElementById('p-year').value;
+  list.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px">` + keys.map(k => {
+    const [y, mRaw] = k.split('-').map(Number);
+    const m = mRaw - 1; // key stores 1-indexed month, convert to 0-indexed
+    const p = paramsStore[k];
+    const isActive = (m === curMonth && y === curYear);
+    const hasReal = p.charges_reelles > 0;
+    return `<span style="display:inline-flex;align-items:center;border-radius:20px;border:1.5px solid ${isActive ? 'var(--blue)' : 'var(--border-strong)'};background:${isActive ? 'var(--blue-bg)' : 'var(--surface2)'}">
+      <button onclick="showParamsDetail('${k}')" style="font-family:var(--mono);font-size:11px;padding:4px 10px;cursor:pointer;border:none;background:none;color:${isActive ? 'var(--blue)' : 'var(--text-muted)'};display:inline-flex;align-items:center;gap:5px">
+        ${hasReal ? '<span style="color:var(--amber);font-size:9px">●</span>' : ''}${MONTHS_FR[m]} ${y}
+      </button>
+      <button onclick="deleteParams('${k}', event)" title="Supprimer ce mois" style="border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-faint);padding:4px 7px 4px 0;line-height:1" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-faint)'">×</button>
+    </span>`;
+  }).join('') + `</div>`;
+}
+function jumpToParamsMonth(month, year) {
+  document.getElementById('p-month').value = month;
+  document.getElementById('p-year').value  = year;
+  loadParams();
+  // Scroll to the form
+  document.querySelector('.month-selector')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function showParamsDetail(key) {
+  const p = paramsStore[key];
+  if (!p) return;
+  const [y, mRaw] = key.split('-').map(Number);
+  const m = mRaw - 1;
+  const totalEst = (p.loyer||0)+(p.energie||0)+(p.impots||0)+(p.assurance||0)+(p.tel||0)+(p.charges_sociales||0);
+  const row = (label, val, color) =>
+    `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span style="color:var(--text-muted)">${label}</span>
+      <span style="font-family:var(--mono);font-weight:500${color ? ';color:'+color : ''}">${val}</span>
+    </div>`;
+  const reelBlock = (p.charges_reelles > 0 || p.salaires_reels > 0) ? `
+    <div style="background:var(--amber-bg,#fffbeb);border:1px solid var(--amber,#d97706);border-radius:8px;padding:10px 12px;margin-top:.75rem">
+      <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--amber);font-weight:500;margin-bottom:6px">Données réelles clôturées</div>
+      ${p.charges_reelles > 0 ? row('Charges d\'exploit. réelles', Math.round(p.charges_reelles).toLocaleString('fr-FR')+' MAD', 'var(--amber)') : ''}
+      ${p.salaires_reels > 0  ? row('Salaires réels', Math.round(p.salaires_reels).toLocaleString('fr-FR')+' MAD', 'var(--amber)') : ''}
+    </div>` : '';
+  document.getElementById('pd-title').textContent = MONTHS_FR[m] + ' ' + y;
+  document.getElementById('pd-body').innerHTML =
+    `<div style="background:var(--surface2);border-radius:8px;padding:.75rem;margin-bottom:.5rem">
+      <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--text-faint);font-weight:500;margin-bottom:6px">Estimation mensuelle</div>
+      ${row('Jours ouvrés',       (p.jours||26)+' j')}
+      ${row('Loyer',              (p.loyer||0).toLocaleString('fr-FR')+' MAD')}
+      ${row('Énergie',            (p.energie||0).toLocaleString('fr-FR')+' MAD')}
+      ${row('Impôts, Patente…',   (p.impots||0).toLocaleString('fr-FR')+' MAD')}
+      ${row('Assurance',          (p.assurance||0).toLocaleString('fr-FR')+' MAD')}
+      ${row('Télécom',            (p.tel||0).toLocaleString('fr-FR')+' MAD')}
+      ${row('Charges sociales',   (p.charges_sociales||0).toLocaleString('fr-FR')+' MAD')}
+      <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:13px;font-weight:600">
+        <span>Total estimé</span>
+        <span style="font-family:var(--mono)">${Math.round(totalEst).toLocaleString('fr-FR')} MAD</span>
+      </div>
+    </div>` + reelBlock;
+  document.getElementById('pd-edit-btn').onclick = () => { closeParamsDetail(); jumpToParamsMonth(m, y); };
+  document.getElementById('params-detail-overlay').style.display = 'flex';
+}
+function closeParamsDetail() {
+  document.getElementById('params-detail-overlay').style.display = 'none';
+}
+function deleteParams(key, event) {
+  event && event.stopPropagation();
+  const [y, mRaw] = key.split('-').map(Number);
+  const m = mRaw - 1;
+  const label = MONTHS_FR[m] + ' ' + y;
+  // Check if any journées exist for this month
+  const hasJournees = Object.keys(journees).some(dateStr => {
+    const d = new Date(dateStr);
+    return d.getMonth() === m && d.getFullYear() === y;
+  });
+  if (hasJournees) {
+    const nbJ = Object.keys(journees).filter(dateStr => {
+      const d = new Date(dateStr);
+      return d.getMonth() === m && d.getFullYear() === y;
+    }).length;
+    // First confirmation
+    const first = confirm(
+      `⚠️ Attention — ${label} a ${nbJ} journée${nbJ > 1 ? 's' : ''} enregistrée${nbJ > 1 ? 's' : ''}.\n\n` +
+      `Supprimer les paramètres de ce mois ne supprimera pas les journées, mais leurs calculs (charges / jour, résultat net) ne seront plus recalculables correctement si vous relancez un recalcul.\n\n` +
+      `Voulez-vous vraiment continuer ?`
+    );
+    if (!first) return;
+    // Second confirmation
+    const second = confirm(
+      `🔴 Dernière confirmation — suppression définitive des paramètres de ${label}.\n\n` +
+      `Les ${nbJ} journée${nbJ > 1 ? 's' : ''} de ce mois garderont leurs valeurs actuelles, mais tout recalcul futur sera impossible sans re-paramétrer ce mois.\n\n` +
+      `Confirmer la suppression ?`
+    );
+    if (!second) return;
+  } else {
+    const ok = confirm(`Supprimer les paramètres de ${label} ?`);
+    if (!ok) return;
+  }
+  delete paramsStore[key];
+  try {
+    localStorage.setItem('damak_params', JSON.stringify(paramsStore));
+    sbSave('params', paramsStore);
+  } catch(e) {}
+  showToast(`Paramètres de ${label} supprimés`);
+  renderParamsHistory();
+}
+
 function loadParams() {
   const month = +document.getElementById('p-month').value;
   const year  = +document.getElementById('p-year').value;
@@ -797,6 +926,7 @@ function loadParams() {
   // Afficher le bouton recalcul seulement si des journées existent ce mois
   const hasJournees = getJourneesForMonth(month, year).length > 0;
   document.getElementById('btn-recalc-wrap').style.display = hasJournees ? 'block' : 'none';
+  renderParamsHistory();
   calcParams();
 }
 
@@ -929,34 +1059,72 @@ function saveParams(btn) {
     localStorage.setItem('damak_params', JSON.stringify(paramsStore));
     sbSave('params', paramsStore);
     showToast('✓ Paramètres enregistrés');
+    renderParamsHistory();
   } catch(e) {
     showToast('Erreur : impossible de sauvegarder (stockage plein ?)', false);
   }
 }
 
 // ── CHAÎNES ───────────────────────────────────────────────────
+function addModelRow(chainId, pcs, prix) {
+  const container = document.getElementById(chainId + '-models');
+  const div = document.createElement('div');
+  div.className = 'model-row';
+  div.innerHTML =
+    '<div style="display:flex;align-items:flex-end;gap:4px">' +
+      '<div style="flex:1">' +
+        '<div class="field"><div class="field-row">' +
+          '<span class="field-label">Pièces</span>' +
+          '<div class="field-input-wrap"><input type="number" class="m-pcs" placeholder="0" min="0" oninput="calcJournee()"' + (pcs ? ' value="'+pcs+'"' : '') + '><span class="field-unit">pcs</span></div>' +
+        '</div></div>' +
+        '<div class="field" style="margin-bottom:0"><div class="field-row">' +
+          '<span class="field-label">Prix / pièce</span>' +
+          '<div class="field-input-wrap"><input type="number" class="m-prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"' + (prix ? ' value="'+prix+'"' : '') + '><span class="field-unit">MAD</span></div>' +
+        '</div></div>' +
+      '</div>' +
+      '<button class="model-remove-btn" onclick="removeModelRow(this)" title="Supprimer">×</button>' +
+    '</div>';
+  container.appendChild(div);
+}
+
+function addModel(chainId) {
+  addModelRow(chainId, 0, 0);
+}
+
+function removeModelRow(btn) {
+  const row = btn.closest('.model-row');
+  const container = row.parentElement;
+  if (container.querySelectorAll('.model-row').length <= 1) {
+    row.querySelectorAll('input').forEach(i => i.value = '');
+    calcJournee();
+    return;
+  }
+  row.remove();
+  calcJournee();
+}
+
+function resetChainModels(chainId, models) {
+  const container = document.getElementById(chainId + '-models');
+  container.innerHTML = '';
+  const rows = (models && models.length > 0) ? models : [{ pcs: 0, prix: 0 }];
+  rows.forEach(m => addModelRow(chainId, m.pcs || 0, m.prix || 0));
+}
+
 function getChainsData() {
-  const rv = id => +document.getElementById(id).value || 0;
-  const raw = [
-    { nom: 'Chaîne 1', models: [
-        { pcs: rv('c1_pcs'),  prix: rv('c1_prix')  },
-        { pcs: rv('c1b_pcs'), prix: rv('c1b_prix') },
-        { pcs: rv('c1c_pcs'), prix: rv('c1c_prix') }
-      ]
-    },
-    { nom: 'Chaîne 2', models: [
-        { pcs: rv('c2_pcs'),  prix: rv('c2_prix')  },
-        { pcs: rv('c2b_pcs'), prix: rv('c2b_prix') },
-        { pcs: rv('c2c_pcs'), prix: rv('c2c_prix') }
-      ]
-    }
-  ];
-  return raw.map(c => {
-    const activeMods = c.models.filter(m => m.pcs > 0);
+  const readChain = (containerId, nom) => {
+    const rows = document.querySelectorAll('#' + containerId + ' .model-row');
+    const activeMods = Array.from(rows).map(row => ({
+      pcs:  +row.querySelector('.m-pcs').value  || 0,
+      prix: +row.querySelector('.m-prix').value || 0,
+    })).filter(m => m.pcs > 0);
     const pcs = activeMods.reduce((s, m) => s + m.pcs, 0);
     const ca  = activeMods.reduce((s, m) => s + m.pcs * m.prix, 0);
-    return { nom: c.nom, pcs, ca, models: activeMods };
-  }).filter(c => c.pcs > 0);
+    return { nom, pcs, ca, models: activeMods };
+  };
+  return [
+    readChain('c1-models', 'Chaîne 1'),
+    readChain('c2-models', 'Chaîne 2'),
+  ].filter(c => c.pcs > 0);
 }
 
 // ── JOURNÉE ───────────────────────────────────────────────────
@@ -975,8 +1143,10 @@ function calcJournee() {
   const c2_ca_val  = c2chain?.ca  || 0;
   const ca         = c1_ca_val + c2_ca_val;
   const facturees  = (c1chain?.pcs || 0) + (c2chain?.pcs || 0);
-  document.getElementById('c1_ca').textContent = c1_ca_val > 0 ? fmt(c1_ca_val) : '0 MAD';
-  document.getElementById('c2_ca').textContent = c2_ca_val > 0 ? fmt(c2_ca_val) : '—';
+  document.getElementById('c1_ca').textContent       = fmt(c1_ca_val);
+  document.getElementById('c2_ca').textContent       = fmt(c2_ca_val);
+  document.getElementById('c1_total_pcs').textContent = (c1chain?.pcs || 0).toLocaleString('fr-FR') + ' pcs';
+  document.getElementById('c2_total_pcs').textContent = (c2chain?.pcs || 0).toLocaleString('fr-FR') + ' pcs';
   document.getElementById('chains-total-pcs').textContent = facturees.toLocaleString('fr-FR') + ' pcs';
   document.getElementById('chains-total-ca').textContent  = fmt(ca);
 
@@ -1072,9 +1242,8 @@ function saveDay(btn) {
       localStorage.setItem('damak_journees', JSON.stringify(journees));
       sbSave('journees', journees);
       showToast('✓ Journée enregistrée');
-      document.getElementById('edit-banner').style.display = 'none';
-      document.querySelector('#page-1 .btn-primary').innerHTML =
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enregistrer et voir dans le dashboard';
+      renderDashboard();
+      cancelEdit(); // remet le formulaire à zéro pour la prochaine saisie
       setTimeout(() => switchTab(0), 900);
     } catch(e) {
       showToast('Erreur : impossible de sauvegarder (stockage plein ?)', false);
@@ -1109,35 +1278,70 @@ function renderDashboard() {
     document.getElementById('db-worst-date').textContent = '—';
     document.getElementById('db-wins').textContent = '0';
     document.getElementById('db-losses').textContent = '0';
+    document.getElementById('db-neutral').textContent = '0';
+    document.getElementById('db-win-pct').textContent = '—';
     document.getElementById('db-ratio-label').textContent = '0 jour enregistré';
-    document.getElementById('db-ratio-win').style.width = '50%';
-    document.getElementById('db-ratio-lose').style.width = '50%';
+    if (winDonutInstance) { winDonutInstance.destroy(); winDonutInstance = null; }
     document.getElementById('db-day-list').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div>Aucune journée enregistrée pour ' + MONTHS_FR[month] + ' ' + year + '.</div>';
+    document.getElementById('db-avg-ca').textContent  = '—';
+    document.getElementById('db-avg-net').textContent = '—';
+    document.getElementById('db-avg-net').style.color = '';
+    ['db-top-pcs-card','db-top-ca-card'].forEach(id => document.getElementById(id).style.display = 'none');
     renderChart([]);
+    renderChainBreakdown([]);
     return;
   }
 
-  const totalCA  = days.reduce((s,d) => s+d.ca,  0);
-  const totalNet = days.reduce((s,d) => s+d.net, 0);
+  const totalCA  = days.reduce((s,d) => s + Math.round(d.ca),  0);
+  const totalNet = days.reduce((s,d) => s + Math.round(d.net), 0);
+  const totalPcs  = days.reduce((s,d) => s + (d.facturees || 0), 0);
+  const avgPcs    = days.length > 0 ? Math.round(totalPcs / days.length) : 0;
+  const avgCA     = days.length > 0 ? Math.round(totalCA  / days.length) : 0;
+  const avgNet    = days.length > 0 ? Math.round(totalNet / days.length) : 0;
   const wins     = days.filter(d => d.net > 200).length;
   const losses   = days.filter(d => d.net < -200).length;
+  const neutral  = days.length - wins - losses;
   const best     = days.reduce((a,b) => a.net>b.net?a:b);
   const worst    = days.reduce((a,b) => a.net<b.net?a:b);
-  const winPct   = days.length > 0 ? (wins/days.length*100) : 50;
+  const winPct   = days.length > 0 ? Math.round(wins/days.length*100) : 0;
 
   document.getElementById('db-ca').textContent = fmtN(totalCA);
+  document.getElementById('k-pcs').textContent     = totalPcs.toLocaleString('fr-FR');
+  document.getElementById('k-pcs-sub').textContent = 'pcs · moy. ' + avgPcs.toLocaleString('fr-FR') + '/j';
+  if (document.getElementById('k-ca-sub')) document.getElementById('k-ca-sub').textContent = 'MAD · moy. ' + fmtN(avgCA) + '/j';
   document.getElementById('db-net').textContent = (totalNet>=0?'+':'')+fmtN(totalNet);
   document.getElementById('db-net').style.color = totalNet>=0?'#16803c':'#c0251e';
   document.getElementById('db-net-sub').textContent = 'MAD · ' + days.length + ' j enregistrés';
+
+  // Moyennes journalières
+  document.getElementById('db-avg-ca').textContent  = fmtN(avgCA);
+  document.getElementById('db-avg-net').textContent = (avgNet>=0?'+':'')+fmtN(avgNet);
+  document.getElementById('db-avg-net').style.color = avgNet>=0?'#16803c':'#c0251e';
   document.getElementById('db-best').textContent = '+'+fmt(best.net);
   document.getElementById('db-best-date').textContent = fmtDate(best.date);
   document.getElementById('db-worst').textContent = fmt(worst.net);
   document.getElementById('db-worst-date').textContent = fmtDate(worst.date);
-  document.getElementById('db-wins').textContent = wins;
-  document.getElementById('db-losses').textContent = losses;
+  document.getElementById('db-wins').textContent    = wins;
+  document.getElementById('db-losses').textContent  = losses;
+  document.getElementById('db-neutral').textContent = neutral;
+  document.getElementById('db-win-pct').textContent = winPct + '%';
   document.getElementById('db-ratio-label').textContent = days.length + ' jour' + (days.length>1?'s':'') + ' enregistré' + (days.length>1?'s':'');
-  document.getElementById('db-ratio-win').style.width  = winPct + '%';
-  document.getElementById('db-ratio-lose').style.width = (100-winPct) + '%';
+  // Donut wins/losses/neutral
+  if (winDonutInstance) { winDonutInstance.destroy(); winDonutInstance = null; }
+  const donutCanvas = document.getElementById('db-wins-donut');
+  if (donutCanvas) {
+    winDonutInstance = new Chart(donutCanvas, {
+      type: 'doughnut',
+      data: {
+        labels: ['Gagnants', 'Équilibre', 'Perdants'],
+        datasets: [{ data: [wins, neutral, losses], backgroundColor: ['#16803c', '#92580a', '#c0251e'], borderWidth: 2, borderColor: '#fff', hoverOffset: 4 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true, cutout: '68%',
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ' : ' + ctx.parsed + ' j' } } }
+      }
+    });
+  }
 
   // Liste journées
   const maxAbs = Math.max(...days.map(d=>Math.abs(d.net)), 1);
@@ -1145,14 +1349,17 @@ function renderDashboard() {
     const pct   = (Math.abs(d.net)/maxAbs*100).toFixed(1);
     const c     = d.net>200?'#16803c':d.net<-200?'#c0251e':'#b45309';
     const badge = d.net>200?'<span class="day-badge badge-win">Gagnant</span>':d.net<-200?'<span class="day-badge badge-lose">Perdant</span>':'<span class="day-badge badge-flat">Équilibre</span>';
+    const iconView  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
     const iconEdit = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
     const iconDel  = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
     return `<div class="day-row">
       <span class="day-date">${fmtDate(d.date)}</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-left:4px">${(d.facturees||0).toLocaleString('fr-FR')} pcs</span>
       <div class="day-bar-wrap"><div class="day-bar" style="width:${pct}%;background:${c}"></div></div>
       <span class="day-val" style="color:${c}">${(d.net>=0?'+':'')+fmt(d.net)}</span>
       ${badge}
       <div class="day-actions">
+        <button class="day-btn" onclick="showDayDetail('${d.date}')" title="Consulter" style="color:var(--blue)">${iconView}</button>
         <button class="day-btn edit" onclick="editDay('${d.date}')" title="Modifier">${iconEdit}</button>
         <button class="day-btn del"  onclick="deleteDay('${d.date}')" title="Supprimer">${iconDel}</button>
       </div>
@@ -1163,52 +1370,202 @@ function renderDashboard() {
   renderChainBreakdown(days);
 }
 
+// ── FICHE DÉTAIL JOURNÉE ──────────────────────────────────────
+let detailCurrentDate = null;
+function showDayDetail(dateStr) {
+  const j = journees[dateStr];
+  if (!j) return;
+  detailCurrentDate = dateStr;
+  document.getElementById('dd-title').textContent = 'Journée du ' + fmtDate(dateStr);
+  const chains = j.chains && j.chains.length > 0
+    ? j.chains
+    : (j.facturees ? [{ nom: 'Production', pcs: j.facturees, ca: j.ca, models: [{ pcs: j.facturees, prix: j.prix_facon || 0 }] }] : []);
+  let chainsHtml = chains.map(c => {
+    const caCal = c.ca != null ? c.ca : c.pcs * (c.prix || 0);
+    const mods  = c.models && c.models.length > 0 ? c.models : [{ pcs: c.pcs, prix: c.prix || 0 }];
+    const modLines = mods.filter(m => m.pcs > 0).map(m =>
+      '<div style="display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);color:var(--text-muted);padding:2px 0">' +
+        '<span>' + m.pcs.toLocaleString('fr-FR') + ' pcs × ' + fmtN(m.prix) + ' MAD</span>' +
+        '<span>' + fmtN(m.pcs * m.prix) + ' MAD</span>' +
+      '</div>'
+    ).join('');
+    return '<div style="background:var(--surface2);border-radius:8px;padding:.75rem;margin-bottom:.5rem">' +
+      '<div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--blue);font-weight:500;margin-bottom:6px">' + (c.nom || 'Chaîne') + '</div>' +
+      modLines +
+      '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;font-weight:500;color:var(--blue);margin-top:6px;padding-top:4px;border-top:1px solid var(--border)">' +
+        '<span>' + c.pcs.toLocaleString('fr-FR') + ' pcs</span>' +
+        '<span>= ' + fmtN(caCal) + ' MAD</span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  const netColor = j.net > 200 ? 'var(--green)' : j.net < -200 ? 'var(--red)' : 'var(--amber)';
+  document.getElementById('dd-body').innerHTML =
+    chainsHtml +
+    '<div style="margin-top:.75rem">' +
+      '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">' +
+        '<span style="color:var(--text-muted)">CA façon total</span>' +
+        '<span style="font-family:var(--mono);font-weight:500">' + fmt(j.ca) + '</span>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">' +
+        '<span style="color:var(--text-muted)">Salaires du jour</span>' +
+        '<span style="font-family:var(--mono);color:var(--red)">− ' + fmt(j.c_mo || 0) + '</span>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">' +
+        '<span style="color:var(--text-muted)">Charges d\'exploitation / jour</span>' +
+        '<span style="font-family:var(--mono);color:var(--red)">− ' + fmt(j.fixes_jour || 0) + '</span>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:15px;font-weight:600">' +
+        '<span>Résultat net</span>' +
+        '<span style="font-family:var(--mono);color:' + netColor + '">' + (j.net >= 0 ? '+' : '') + fmt(j.net) + '</span>' +
+      '</div>' +
+    '</div>';
+  document.getElementById('day-detail-overlay').style.display = 'flex';
+}
+function closeDayDetail() {
+  document.getElementById('day-detail-overlay').style.display = 'none';
+  detailCurrentDate = null;
+}
+function editDayFromDetail() {
+  const d = detailCurrentDate;
+  closeDayDetail();
+  editDay(d);
+}
+
+let chainPieInstances = [];
 function renderChainBreakdown(days) {
   const panel = document.getElementById('db-chains-panel');
   const body  = document.getElementById('db-chains-body');
   if (!panel || !body) return;
 
+  // ── Agréger par chaîne (compatibilité ancien + nouveau format)
   const chainMap = {};
   days.forEach(day => {
     const chains = day.chains && day.chains.length > 0
       ? day.chains
-      : (day.facturees ? [{ nom: 'Production', pcs: day.facturees, prix: day.prix_facon || 0 }] : []);
+      : (day.facturees ? [{ nom: 'Production', pcs: day.facturees, ca: (day.facturees * (day.prix_facon || 0)) }] : []);
     chains.filter(c => c.pcs > 0).forEach(c => {
-      const name = c.nom || 'Chaîne';
+      const name  = c.nom || 'Chaîne';
+      const caCal = c.ca != null ? c.ca : c.pcs * (c.prix || 0);
       if (!chainMap[name]) chainMap[name] = { pcs: 0, ca: 0, days: 0 };
       chainMap[name].pcs  += c.pcs;
-      chainMap[name].ca   += c.pcs * c.prix;
+      chainMap[name].ca   += caCal;
       chainMap[name].days += 1;
     });
   });
 
   const entries = Object.entries(chainMap).sort((a,b) => b[1].ca - a[1].ca);
-  // Masquer le panel s'il n'y a qu'une seule chaîne générique
+  chainPieInstances.forEach(c => c.destroy());
+  chainPieInstances = [];
+
   if (entries.length <= 1 && (entries.length === 0 || entries[0][0] === 'Production')) {
-    panel.style.display = 'none'; return;
+    panel.style.display = 'none';
+    // Masquer les pavés chaîne
+    ['db-top-pcs-card','db-top-ca-card'].forEach(id => document.getElementById(id).style.display = 'none');
+    return;
   }
   panel.style.display = '';
-  const totalCA = entries.reduce((s,[,v]) => s + v.ca, 0);
 
-  body.innerHTML = entries.map(([name, v]) => {
-    const pct    = totalCA > 0 ? v.ca / totalCA * 100 : 0;
-    const pxPcs  = v.pcs > 0 ? v.ca / v.pcs : 0;
-    const pcsJ   = v.days > 0 ? Math.round(v.pcs / v.days) : 0;
-    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-      <span style="font-family:var(--mono);font-size:12px;color:var(--text);width:90px;flex-shrink:0">${name}</span>
-      <div style="flex:1">
-        <div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--text-faint);margin-bottom:4px">
-          <span>${v.pcs.toLocaleString('fr-FR')} pcs — ${pcsJ.toLocaleString('fr-FR')} pcs/j</span>
-          <span>${pxPcs > 0 ? fmtN(pxPcs) + ' MAD/pcs' : ''}</span>
-        </div>
-        <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;border:1px solid var(--border)">
-          <div style="height:100%;width:${pct.toFixed(1)}%;background:var(--blue);border-radius:3px;transition:width .4s"></div>
-        </div>
-      </div>
-      <span style="font-family:var(--mono);font-size:11px;color:var(--text-muted);width:40px;text-align:right;flex-shrink:0">${Math.round(pct)}%</span>
-      <span style="font-family:var(--mono);font-size:12px;color:var(--text);width:90px;text-align:right;flex-shrink:0">${fmtN(v.ca)} MAD</span>
+  const totalCA  = entries.reduce((s,[,v]) => s + v.ca,  0);
+  const totalPcs = entries.reduce((s,[,v]) => s + v.pcs, 0);
+  const PALETTE  = ['#1d5fc4','#16803c','#92580a','#c0251e','#6d28d9'];
+
+  // ── Tableau récap
+  body.innerHTML = entries.map(([name, v], i) => {
+    const pcsJ = v.days > 0 ? Math.round(v.pcs / v.days) : 0;
+    const pct  = totalCA > 0 ? v.ca / totalCA * 100 : 0;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="width:9px;height:9px;border-radius:50%;background:${PALETTE[i%PALETTE.length]};flex-shrink:0;display:inline-block"></span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--text);width:80px;flex-shrink:0">${name}</span>
+      <div style="flex:1;font-size:10px;font-family:var(--mono);color:var(--text-faint)">${v.pcs.toLocaleString('fr-FR')} pcs — ${pcsJ} pcs/j moy.</div>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--text-muted);width:36px;text-align:right;flex-shrink:0">${Math.round(pct)}%</span>
+      <span style="font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text);width:90px;text-align:right;flex-shrink:0">${fmtN(v.ca)} MAD</span>
     </div>`;
   }).join('');
+
+  // ── Pavés "top chaîne"
+  const byPcs = [...entries].sort((a,b) => b[1].pcs - a[1].pcs);
+  const byCa  = [...entries].sort((a,b) => b[1].ca  - a[1].ca);
+  const topPcsCard = document.getElementById('db-top-pcs-card');
+  const topCaCard  = document.getElementById('db-top-ca-card');
+  if (topPcsCard) {
+    topPcsCard.style.display = '';
+    document.getElementById('db-top-pcs-name').textContent = byPcs[0][0];
+    const pcsShare = totalPcs > 0 ? Math.round(byPcs[0][1].pcs / totalPcs * 100) : 0;
+    document.getElementById('db-top-pcs-sub').textContent  = byPcs[0][1].pcs.toLocaleString('fr-FR') + ' pcs · ' + pcsShare + '% du total';
+  }
+  if (topCaCard) {
+    topCaCard.style.display = '';
+    document.getElementById('db-top-ca-name').textContent = byCa[0][0];
+    const caShare = totalCA > 0 ? Math.round(byCa[0][1].ca / totalCA * 100) : 0;
+    document.getElementById('db-top-ca-sub').textContent  = fmtN(byCa[0][1].ca) + ' MAD · ' + caShare + '% du CA';
+  }
+
+  // ── Deux camemberts
+  const pieCfg = (dataArr, labelArr, title) => ({
+    type: 'doughnut',
+    data: {
+      labels: labelArr,
+      datasets: [{ data: dataArr, backgroundColor: PALETTE.slice(0, labelArr.length), borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '52%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'IBM Plex Mono', size: 10 }, boxWidth: 10, padding: 10 } },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ' : ' + ctx.parsed.toLocaleString('fr-FR') + ' ' + title + ' (' + Math.round(ctx.parsed / ctx.dataset.data.reduce((a,b)=>a+b,0)*100) + '%)' } }
+      }
+    }
+  });
+
+  const names   = entries.map(([n]) => n);
+  const pcsList = entries.map(([,v]) => v.pcs);
+  const caList  = entries.map(([,v]) => Math.round(v.ca));
+
+  const canvasPcs = document.getElementById('db-chains-pie-pcs');
+  const canvasCa  = document.getElementById('db-chains-pie-ca');
+  if (canvasPcs) chainPieInstances.push(new Chart(canvasPcs, pieCfg(pcsList, names, 'pcs')));
+  if (canvasCa)  chainPieInstances.push(new Chart(canvasCa,  pieCfg(caList,  names, 'MAD')));
+
+  // ── Courbe journalière par chaîne
+  const canvasLine = document.getElementById('db-chains-chart');
+  if (!canvasLine) return;
+  const labels   = days.map(d => { const dt = new Date(d.date); return dt.getDate()+'/'+(dt.getMonth()+1); });
+  const datasets = entries.map(([name], i) => {
+    const data = days.map(day => {
+      const chains = day.chains && day.chains.length > 0
+        ? day.chains
+        : (day.facturees ? [{ nom: 'Production', pcs: day.facturees }] : []);
+      const c = chains.find(c => (c.nom || 'Chaîne') === name);
+      return c ? c.pcs : 0;
+    });
+    return {
+      label: name, data,
+      borderColor: PALETTE[i % PALETTE.length],
+      backgroundColor: PALETTE[i % PALETTE.length] + '18',
+      borderWidth: 2,
+      pointRadius: days.length > 20 ? 2 : 4,
+      pointHoverRadius: 6,
+      tension: 0.3,
+      fill: false,
+    };
+  });
+  chainPieInstances.push(new Chart(canvasLine, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { family: 'IBM Plex Mono', size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ' : ' + ctx.parsed.y.toLocaleString('fr-FR') + ' pcs' } }
+      },
+      scales: {
+        x: { ticks: { font: { family: 'IBM Plex Mono', size: 10 }, maxTicksLimit: 12 }, grid: { display: false } },
+        y: { ticks: { font: { family: 'IBM Plex Mono', size: 10 } }, title: { display: true, text: 'pcs / jour', font: { family: 'IBM Plex Mono', size: 10 } } }
+      }
+    }
+  }));
 }
 
 function fmtDate(str) {
@@ -1334,13 +1691,8 @@ function editDay(dateStr) {
   };
   const c1m = getModels(c1saved);
   const c2m = getModels(c2saved);
-  const setV = (id, val) => document.getElementById(id).value = val || '';
-  setV('c1_pcs',  c1m[0]?.pcs);  setV('c1_prix',  c1m[0]?.prix);
-  setV('c1b_pcs', c1m[1]?.pcs);  setV('c1b_prix', c1m[1]?.prix);
-  setV('c1c_pcs', c1m[2]?.pcs);  setV('c1c_prix', c1m[2]?.prix);
-  setV('c2_pcs',  c2m[0]?.pcs);  setV('c2_prix',  c2m[0]?.prix);
-  setV('c2b_pcs', c2m[1]?.pcs);  setV('c2b_prix', c2m[1]?.prix);
-  setV('c2c_pcs', c2m[2]?.pcs);  setV('c2c_prix', c2m[2]?.prix);
+  resetChainModels('c1', c1m);
+  resetChainModels('c2', c2m);
   // Bandeau édition
   const banner = document.getElementById('edit-banner');
   document.getElementById('edit-banner-text').textContent = 'Modification de la journée du ' + fmtDate(dateStr);
@@ -1354,9 +1706,9 @@ function editDay(dateStr) {
 function cancelEdit() {
   document.getElementById('edit-banner').style.display = 'none';
   document.getElementById('date-input').value   = today.toISOString().split('T')[0];
-  ['c1_pcs','c1_prix','c1b_pcs','c1b_prix','c1c_pcs','c1c_prix',
-   'c2_pcs','c2_prix','c2b_pcs','c2b_prix','c2c_pcs','c2c_prix',
-   'salaires_jour'].forEach(id => document.getElementById(id).value = '');
+  resetChainModels('c1', []);
+  resetChainModels('c2', []);
+  document.getElementById('salaires_jour').value = '';
   document.querySelector('#page-1 .btn-primary').innerHTML =
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enregistrer et voir dans le dashboard';
   calcJournee();
@@ -1488,6 +1840,43 @@ init();
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="closeRecalcModal()">Annuler</button>
       <button class="modal-btn-confirm" onclick="confirmRecalcMonth()">Confirmer le recalcul</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODALE DÉTAIL JOURNÉE ═══ -->
+<div id="params-detail-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:8000;align-items:center;justify-content:center;padding:1.5rem" onclick="if(event.target===this)closeParamsDetail()">
+  <div style="background:#fff;border-radius:14px;padding:1.75rem;max-width:420px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.22);max-height:90vh;overflow-y:auto;animation:modalIn .18s ease">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--text-faint);font-weight:500" id="pd-title">Paramètres —</div>
+      <button onclick="closeParamsDetail()" style="background:none;border:none;font-size:20px;color:var(--text-faint);cursor:pointer;line-height:1;padding:0 4px">×</button>
+    </div>
+    <div id="pd-body"></div>
+    <div style="display:flex;gap:10px;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border)">
+      <button id="pd-edit-btn" style="flex:1;background:var(--blue);border:none;color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:8px;cursor:pointer">
+        ✏ Modifier ce mois
+      </button>
+      <button onclick="closeParamsDetail()" style="background:var(--surface2);border:1px solid var(--border-strong);color:var(--text-muted);font-size:13px;padding:9px 18px;border-radius:8px;cursor:pointer">
+        Fermer
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="day-detail-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:8000;align-items:center;justify-content:center;padding:1.5rem" onclick="if(event.target===this)closeDayDetail()">
+  <div style="background:#fff;border-radius:14px;padding:1.75rem;max-width:460px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.22);max-height:90vh;overflow-y:auto;animation:modalIn .18s ease">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--blue);font-weight:500" id="dd-title">Journée du —</div>
+      <button onclick="closeDayDetail()" style="background:none;border:none;font-size:20px;color:var(--text-faint);cursor:pointer;line-height:1;padding:0 4px">×</button>
+    </div>
+    <div id="dd-body"></div>
+    <div style="display:flex;gap:10px;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border)">
+      <button onclick="editDayFromDetail()" style="flex:1;background:var(--blue);border:none;color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:8px;cursor:pointer">
+        ✏ Modifier cette journée
+      </button>
+      <button onclick="closeDayDetail()" style="background:var(--surface2);border:1px solid var(--border-strong);color:var(--text-muted);font-size:13px;padding:9px 18px;border-radius:8px;cursor:pointer">
+        Fermer
+      </button>
     </div>
   </div>
 </div>
