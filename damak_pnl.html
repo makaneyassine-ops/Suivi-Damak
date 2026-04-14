@@ -775,6 +775,11 @@ function switchTab(n) {
 }
 
 // ── UTILITAIRES ───────────────────────────────────────────────
+function parseNum(val) {
+  // Accepte virgule (française) ou point comme séparateur décimal
+  return parseFloat(String(val).trim().replace(',', '.')) || 0;
+}
+
 function fmtN(n) {
   const abs = Math.abs(Math.round(n));
   return (n < 0 ? '\u2212\u202f' : '') + abs.toLocaleString('fr-FR');
@@ -1079,7 +1084,7 @@ function addModelRow(chainId, pcs, prix) {
         '</div></div>' +
         '<div class="field" style="margin-bottom:0"><div class="field-row">' +
           '<span class="field-label">Prix / pièce</span>' +
-          '<div class="field-input-wrap"><input type="number" class="m-prix" placeholder="0" min="0" step="0.5" oninput="calcJournee()"' + (prix ? ' value="'+prix+'"' : '') + '><span class="field-unit">MAD</span></div>' +
+          '<div class="field-input-wrap"><input type="text" inputmode="decimal" class="m-prix" placeholder="0" oninput="calcJournee()"' + (prix ? ' value="'+prix+'"' : '') + '><span class="field-unit">MAD</span></div>' +
         '</div></div>' +
       '</div>' +
       '<button class="model-remove-btn" onclick="removeModelRow(this)" title="Supprimer">×</button>' +
@@ -1114,8 +1119,8 @@ function getChainsData() {
   const readChain = (containerId, nom) => {
     const rows = document.querySelectorAll('#' + containerId + ' .model-row');
     const activeMods = Array.from(rows).map(row => ({
-      pcs:  +row.querySelector('.m-pcs').value  || 0,
-      prix: +row.querySelector('.m-prix').value || 0,
+      pcs:  parseNum(row.querySelector('.m-pcs').value),
+      prix: parseNum(row.querySelector('.m-prix').value),
     })).filter(m => m.pcs > 0);
     const pcs = activeMods.reduce((s, m) => s + m.pcs, 0);
     const ca  = activeMods.reduce((s, m) => s + m.pcs * m.prix, 0);
